@@ -29,6 +29,32 @@ export default function Settings() {
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [newKeyForm, setNewKeyForm] = useState({ platformId: "", apiKey: "", apiSecret: "", label: "" });
   const [newAiForm, setNewAiForm] = useState({ name: "", provider: "", baseUrl: "", apiKey: "" });
+  const AI_PROVIDERS = [
+    { id: "openai", name: "OpenAI", baseUrl: "https://api.openai.com/v1" },
+    { id: "anthropic", name: "Anthropic", baseUrl: "https://api.anthropic.com/v1" },
+    { id: "google", name: "Google Gemini", baseUrl: "https://generativelanguage.googleapis.com/v1beta" },
+    { id: "deepseek", name: "DeepSeek", baseUrl: "https://api.deepseek.com/v1" },
+    { id: "groq", name: "Groq", baseUrl: "https://api.groq.com/openai/v1" },
+    { id: "custom", name: "Custom / Local (Ollama)", baseUrl: "http://localhost:11434/v1" },
+  ];
+
+  const handleAiProviderChange = (providerId: string) => {
+    const provider = AI_PROVIDERS.find(p => p.id === providerId);
+    if (provider) {
+      setNewAiForm({
+        ...newAiForm,
+        provider: provider.name,
+        baseUrl: provider.baseUrl
+      });
+    } else {
+      setNewAiForm({
+        ...newAiForm,
+        provider: providerId,
+        baseUrl: ""
+      });
+    }
+  };
+
   const [formData, setFormData] = useState<any>({});
 
   React.useEffect(() => {
@@ -343,7 +369,18 @@ export default function Settings() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">المزود (Provider)</label>
-                <input required className="w-full p-3 rounded-xl bg-background border border-border outline-none" placeholder="OpenAI, Anthropic" value={newAiForm.provider} onChange={(e) => setNewAiForm({...newAiForm, provider: e.target.value})} />
+                <select 
+                  required 
+                  className="w-full p-3 rounded-xl bg-background border border-border outline-none"
+                  value={AI_PROVIDERS.find(p => p.name === newAiForm.provider)?.id || "custom"}
+                  onChange={(e) => handleAiProviderChange(e.target.value)}
+                >
+                  <option value="">اختر المزود...</option>
+                  {AI_PROVIDERS.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                  <option value="custom">مزود مخصص (Custom)</option>
+                </select>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Base URL</label>
