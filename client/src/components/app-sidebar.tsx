@@ -7,9 +7,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarGroupContent,
-  SidebarTrigger, // Import SidebarTrigger here
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { LayoutDashboard, Settings, ScrollText, LogOut, LogIn, User } from "lucide-react";
@@ -29,7 +27,6 @@ export function AppSidebar({ side = "right" }: { side?: "left" | "right" }) {
     <Sidebar side={side} collapsible="icon">
       <SidebarContent className="flex-1">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-right px-4 text-primary font-bold text-lg">القائمة الرئيسية</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
