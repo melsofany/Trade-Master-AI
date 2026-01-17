@@ -236,7 +236,7 @@ function StatsCard({ title, value, icon: Icon, trend, trendUp, goodTrendIsDown, 
         <div className="flex items-end justify-between">
           <span className="text-3xl font-bold font-mono tracking-tighter">{value}</span>
           {trend && (
-            <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full \${isPositive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+            <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${isPositive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
               {isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
               <span dir="ltr">{trend}</span>
             </div>
@@ -254,7 +254,7 @@ function AILogMessage({ time, text, sentiment }: any) {
     neutral: "border-blue-500/30 bg-blue-500/5"
   };
   return (
-    <div className={`p-3 rounded-lg border-r-2 \${colors[sentiment as keyof typeof colors]} text-sm`}>
+    <div className={`p-3 rounded-lg border-r-2 ${colors[sentiment as keyof typeof colors]} text-sm`}>
       <div className="flex items-center gap-2 mb-1">
         <span className="text-xs font-mono text-muted-foreground/70" dir="ltr">{time}</span>
       </div>
