@@ -30,11 +30,11 @@ export function getSession() {
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
-    resave: false,
-    saveUninitialized: false,
+    resave: true, // Force session to be saved back to the session store
+    saveUninitialized: true, // Force a session that is "uninitialized" to be saved to the store
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: false, // Set to false for Replit dev environment
       sameSite: "lax",
       maxAge: sessionTtl,
     },
