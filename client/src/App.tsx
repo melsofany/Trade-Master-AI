@@ -50,7 +50,7 @@ function App() {
               <header className="flex h-14 items-center justify-between border-b bg-background px-4">
                 <div className="flex items-center gap-2">
                   <SidebarTrigger data-testid="button-sidebar-toggle" className="h-9 w-9" />
-                  <h1 className="text-lg font-semibold text-primary">نظرة عامة على النظام</h1>
+                  <h1 className="text-lg font-semibold text-primary">الرئيسية</h1>
                 </div>
               </header>
               <main className="flex-1 overflow-auto">
