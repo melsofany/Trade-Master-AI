@@ -1,3 +1,4 @@
+import React, { useEffect } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
@@ -24,6 +25,12 @@ function Router() {
 
   const [, setLocation] = useLocation();
 
+  useEffect(() => {
+    if (!isLoading && !user && window.location.pathname !== "/login") {
+      setLocation("/login");
+    }
+  }, [user, isLoading, setLocation]);
+
   if (isLoading) return <div className="flex h-screen items-center justify-center">جاري التحميل...</div>;
 
   return (
@@ -31,12 +38,7 @@ function Router() {
       <Route path="/login" component={Login} />
       {!user ? (
         <Route path="/:rest*">
-          {() => {
-            React.useEffect(() => {
-              setLocation("/login");
-            }, []);
-            return null;
-          }}
+          {() => null}
         </Route>
       ) : (
         <Layout>
