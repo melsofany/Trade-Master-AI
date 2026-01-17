@@ -26,7 +26,7 @@ export default function Login() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       setLocation("/");
       toast({
         title: "تم تسجيل الدخول",
