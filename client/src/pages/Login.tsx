@@ -14,7 +14,7 @@ export default function Login() {
 
   const loginMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch("/api/login", {
+      const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),

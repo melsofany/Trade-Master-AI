@@ -16,7 +16,7 @@ export async function registerRoutes(
   registerChatRoutes(app);
 
   // === Authentication Routes ===
-  app.post("/api/login", (req, res) => {
+  app.post("/api/auth/login", (req, res) => {
     const { username, password } = req.body;
     const adminUser = process.env.ADMIN_USERNAME;
     const adminPass = process.env.ADMIN_PASSWORD;
@@ -29,15 +29,15 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/logout", (req, res) => {
+  app.get("/api/auth/logout", (req, res) => {
     req.session.destroy(() => {
-      res.json({ success: true });
+      res.redirect("/login");
     });
   });
 
-  app.get("/api/user", (req, res) => {
+  app.get("/api/auth/user", (req, res) => {
     if ((req.session as any).isAuthenticated) {
-      res.json({ username: process.env.ADMIN_USERNAME });
+      res.json({ username: process.env.ADMIN_USERNAME, firstName: "Admin", lastName: "" });
     } else {
       res.status(401).json({ message: "غير مصرح" });
     }
