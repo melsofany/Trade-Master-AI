@@ -213,9 +213,36 @@ export async function registerRoutes(
 async function seedData() {
   const platforms = await storage.getPlatforms();
   if (platforms.length === 0) {
-    await storage.createPlatform({ name: "Binance", slug: "binance", baseUrl: "https://api.binance.com" });
-    await storage.createPlatform({ name: "Bybit", slug: "bybit", baseUrl: "https://api.bybit.com" });
-    await storage.createPlatform({ name: "KuCoin", slug: "kucoin", baseUrl: "https://api.kucoin.com" });
-    await storage.createPlatform({ name: "OKX", slug: "okx", baseUrl: "https://www.okx.com" });
+    const defaultPlatforms = [
+      { name: "Binance", slug: "binance", baseUrl: "https://api.binance.com" },
+      { name: "Bybit", slug: "bybit", baseUrl: "https://api.bybit.com" },
+      { name: "KuCoin", slug: "kucoin", baseUrl: "https://api.kucoin.com" },
+      { name: "OKX", slug: "okx", baseUrl: "https://www.okx.com" },
+      { name: "Kraken", slug: "kraken", baseUrl: "https://api.kraken.com" },
+      { name: "Gate.io", slug: "gateio", baseUrl: "https://api.gateio.ws" },
+      { name: "Huobi", slug: "huobi", baseUrl: "https://api.huobi.pro" },
+      { name: "MEXC", slug: "mexc", baseUrl: "https://api.mexc.com" },
+      { name: "Bitget", slug: "bitget", baseUrl: "https://api.bitget.com" },
+      { name: "Coinbase", slug: "coinbase", baseUrl: "https://api.coinbase.com" },
+      { name: "Bitfinex", slug: "bitfinex", baseUrl: "https://api.bitfinex.com" },
+      { name: "Bittrex", slug: "bittrex", baseUrl: "https://api.bittrex.com" },
+      { name: "Poloniex", slug: "poloniex", baseUrl: "https://api.poloniex.com" },
+      { name: "Gemini", slug: "gemini", baseUrl: "https://api.gemini.com" },
+      { name: "Crypto.com", slug: "cryptocom", baseUrl: "https://api.crypto.com" },
+      { name: "LBank", slug: "lbank", baseUrl: "https://api.lbank.info" },
+      { name: "Phemex", slug: "phemex", baseUrl: "https://api.phemex.com" },
+      { name: "Bitstamp", slug: "bitstamp", baseUrl: "https://www.bitstamp.net" },
+      { name: "WhiteBIT", slug: "whitebit", baseUrl: "https://whitebit.com" },
+      { name: "DigiFinex", slug: "digifinex", baseUrl: "https://openapi.digifinex.com" },
+      { name: "CoinEx", slug: "coinex", baseUrl: "https://api.coinex.com" },
+      { name: "AscendEX", slug: "ascendex", baseUrl: "https://ascendex.com" },
+      { name: "BitMart", slug: "bitmart", baseUrl: "https://api-cloud.bitmart.com" },
+      { name: "BingX", slug: "bingx", baseUrl: "https://open-api.bingx.com" },
+      { name: "XT.COM", slug: "xtcom", baseUrl: "https://api.xt.com" }
+    ];
+
+    for (const p of defaultPlatforms) {
+      await storage.createPlatform(p);
+    }
   }
 }
