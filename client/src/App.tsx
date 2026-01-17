@@ -49,6 +49,7 @@ function App() {
             <div className="flex flex-col flex-1 overflow-hidden">
               <header className="flex h-14 items-center justify-between border-b bg-background px-4">
                 <div className="flex items-center">
+                  <SidebarTrigger data-testid="button-sidebar-toggle" />
                 </div>
                 <div className="flex items-center gap-4">
                   <h1 className="text-lg font-semibold text-primary">لوحة التحكم</h1>
