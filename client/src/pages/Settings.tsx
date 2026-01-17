@@ -118,6 +118,28 @@ export default function Settings() {
                 onChange={(e) => setFormData({...formData, tradeAmountUsdt: e.target.value})}
               />
             </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">توكين بوت التيليجرام (Telegram Bot Token)</label>
+              <input 
+                type="password" 
+                placeholder="123456789:ABCDefgh..."
+                className="w-full p-3 rounded-xl bg-background border border-border focus:ring-2 focus:ring-primary/20 outline-none font-mono text-sm"
+                value={formData.telegramBotToken || ""}
+                onChange={(e) => setFormData({...formData, telegramBotToken: e.target.value})}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">معرف المستخدم (Telegram User ID)</label>
+              <input 
+                type="text" 
+                placeholder="123456789"
+                className="w-full p-3 rounded-xl bg-background border border-border focus:ring-2 focus:ring-primary/20 outline-none font-mono text-sm"
+                value={formData.telegramUserId || ""}
+                onChange={(e) => setFormData({...formData, telegramUserId: e.target.value})}
+              />
+            </div>
           </div>
 
           <div className="flex justify-end pt-4">

@@ -32,6 +32,8 @@ export const botSettings = pgTable("bot_settings", {
   minProfitPercentage: numeric("min_profit_percentage").default("0.8"),
   tradeAmountUsdt: numeric("trade_amount_usdt").default("100"),
   refreshRateSec: integer("refresh_rate_sec").default(10),
+  telegramBotToken: text("telegram_bot_token"),
+  telegramUserId: text("telegram_user_id"),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
