@@ -42,6 +42,7 @@ export function getSession() {
       path: "/",
       domain: undefined,
     },
+    rolling: true, // Ensures session is refreshed on each request
   });
 }
 

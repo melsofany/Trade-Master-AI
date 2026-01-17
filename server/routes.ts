@@ -37,7 +37,13 @@ export async function registerRoutes(
             console.error("Session save error:", err);
             return res.status(500).json({ message: "خطأ في حفظ الجلسة" });
           }
-          res.json({ success: true });
+          // Important: Sync session with passport for isAuthenticated() consistency
+          req.login((req.session as any).user, (loginErr) => {
+            if (loginErr) {
+              console.error("Passport login error:", loginErr);
+            }
+            res.json({ success: true });
+          });
         });
       });
     } else {
