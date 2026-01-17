@@ -32,20 +32,13 @@ export async function registerRoutes(
         (req.session as any).isAuthenticated = true;
         (req.session as any).user = { username: adminUser, firstName: "Admin", lastName: "" };
         
-        // Use req.login before saving session to ensure passport state is serialized
-        req.login((req.session as any).user, (loginErr) => {
-          if (loginErr) {
-            console.error("Passport login error:", loginErr);
-            return res.status(500).json({ message: "خطأ في تسجيل الدخول" });
+        // Manual session assignment for bypass
+        req.session.save((err) => {
+          if (err) {
+            console.error("Session save error:", err);
+            return res.status(500).json({ message: "خطأ في حفظ الجلسة" });
           }
-          
-          req.session.save((err) => {
-            if (err) {
-              console.error("Session save error:", err);
-              return res.status(500).json({ message: "خطأ في حفظ الجلسة" });
-            }
-            res.json({ success: true });
-          });
+          res.json({ success: true });
         });
       });
     } else {

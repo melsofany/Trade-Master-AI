@@ -36,8 +36,8 @@ export function getSession() {
     proxy: true,
     cookie: {
       httpOnly: true,
-      secure: true, // Use secure cookies
-      sameSite: "none", // Required for cross-site cookie in iframe
+      secure: false, // Change back to false since it's dev environment without proper HTTPS
+      sameSite: "lax", // Change back to lax for standard dev environment
       maxAge: sessionTtl,
       path: "/",
     },
