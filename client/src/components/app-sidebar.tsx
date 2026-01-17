@@ -9,6 +9,7 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupContent,
+  SidebarTrigger, // Import SidebarTrigger here
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { LayoutDashboard, Settings, ScrollText, LogOut, LogIn, User } from "lucide-react";
@@ -27,8 +28,9 @@ export function AppSidebar({ side = "right" }: { side?: "left" | "right" }) {
   return (
     <Sidebar side={side} collapsible="icon">
       <SidebarHeader className="p-4 border-b">
-        <div className="flex items-center gap-2 font-bold text-xl justify-center">
-          <span className="text-primary">بوت التداول</span>
+        <div className="flex items-center justify-between gap-2">
+          <SidebarTrigger className="h-8 w-8" />
+          <div className="font-bold text-xl text-primary truncate">بوت التداول</div>
         </div>
       </SidebarHeader>
       <SidebarContent className="flex-1">
