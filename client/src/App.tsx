@@ -48,11 +48,20 @@ function App() {
             <AppSidebar side="right" />
             <div className="flex flex-col flex-1 overflow-hidden">
               <header className="flex h-14 items-center justify-between border-b bg-background px-4">
-                <div className="flex items-center gap-2">
-                  <SidebarTrigger data-testid="button-sidebar-toggle" className="h-9 w-9" />
+                <div className="flex items-center">
+                  <button
+                    onClick={() => {
+                      const event = new CustomEvent("toggle-sidebar");
+                      window.dispatchEvent(event);
+                    }}
+                    className="flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+                    title="تحكم في القائمة"
+                  >
+                    <LayoutDashboard className="h-5 w-5" />
+                  </button>
                 </div>
                 <div className="flex items-center gap-4">
-                  {/* Space for future header items */}
+                  <h1 className="text-lg font-semibold text-primary">لوحة التحكم</h1>
                 </div>
               </header>
               <main className="flex-1 overflow-auto">
