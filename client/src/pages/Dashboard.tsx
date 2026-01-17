@@ -10,7 +10,8 @@ import {
   ArrowUpRight, 
   ArrowDownRight,
   BrainCircuit,
-  Zap
+  Zap,
+  Bot
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { motion } from "framer-motion";
