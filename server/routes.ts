@@ -23,7 +23,14 @@ export async function registerRoutes(
 
     if (username === adminUser && password === adminPass) {
       (req.session as any).isAuthenticated = true;
-      res.json({ success: true });
+      (req.session as any).user = { username: adminUser, firstName: "Admin", lastName: "" };
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return res.status(500).json({ message: "خطأ في حفظ الجلسة" });
+        }
+        res.json({ success: true });
+      });
     } else {
       res.status(401).json({ message: "اسم المستخدم أو كلمة المرور غير صحيحة" });
     }
@@ -36,8 +43,9 @@ export async function registerRoutes(
   });
 
   app.get("/api/auth/user", (req, res) => {
-    if ((req.session as any).isAuthenticated) {
-      res.json({ username: process.env.ADMIN_USERNAME, firstName: "Admin", lastName: "" });
+    if ((req.session as any).isAuthenticated || req.isAuthenticated()) {
+      const user = (req.session as any).user || req.user;
+      res.json(user);
     } else {
       res.status(401).json({ message: "غير مصرح" });
     }
@@ -45,7 +53,7 @@ export async function registerRoutes(
 
   // Middleware to protect routes
   const requireAuth = (req: any, res: any, next: any) => {
-    if (req.session.isAuthenticated) {
+    if (req.session.isAuthenticated || req.isAuthenticated()) {
       next();
     } else {
       res.status(401).json({ message: "يرجى تسجيل الدخول أولاً" });
