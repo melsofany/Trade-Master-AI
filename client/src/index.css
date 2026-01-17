@@ -8,36 +8,37 @@
   --font-sans: 'Cairo', sans-serif;
   --font-display: 'IBM Plex Sans Arabic', sans-serif;
 
-  /* Dark Theme by default for Fintech/Trading vibe */
-  --background: 222 47% 11%;
-  --foreground: 210 40% 98%;
+  /* SAP Fiori Light Theme */
+  --background: 0 0% 97%; /* #f7f7f7 */
+  --foreground: 210 7% 21%; /* #32363a */
 
-  --card: 222 47% 13%;
-  --card-foreground: 210 40% 98%;
+  --card: 0 0% 100%;
+  --card-foreground: 210 7% 21%;
+  --card-border: 0 0% 89%;
 
-  --popover: 222 47% 11%;
-  --popover-foreground: 210 40% 98%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 210 7% 21%;
 
-  --primary: 217 91% 60%;
-  --primary-foreground: 222 47% 11%;
+  --primary: 211 100% 41%; /* SAP Blue #0064d1 */
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 217 32% 17%;
-  --secondary-foreground: 210 40% 98%;
+  --secondary: 210 16% 93%; /* #ebeef0 */
+  --secondary-foreground: 210 7% 21%;
 
-  --muted: 217 32% 17%;
-  --muted-foreground: 215 20% 65%;
+  --muted: 210 16% 93%;
+  --muted-foreground: 210 7% 45%;
 
-  --accent: 160 84% 39%; /* Emerald for profits */
-  --accent-foreground: 210 40% 98%;
+  --accent: 140 50% 45%; /* SAP Positive Green */
+  --accent-foreground: 0 0% 100%;
 
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 210 40% 98%;
+  --destructive: 0 75% 45%; /* SAP Negative Red */
+  --destructive-foreground: 0 0% 100%;
 
-  --border: 217 32% 17%;
-  --input: 217 32% 17%;
-  --ring: 224 76% 48%;
+  --border: 0 0% 89%;
+  --input: 0 0% 89%;
+  --ring: 211 100% 41%;
 
-  --radius: 0.75rem;
+  --radius: 0.25rem; /* SAP uses sharper corners */
 }
 
 @layer base {
@@ -49,8 +50,44 @@
     font-family: var(--font-sans);
   }
   h1, h2, h3, h4, h5, h6 {
+    @apply font-bold;
     font-family: var(--font-display);
+    color: #32363a;
   }
+}
+
+/* SAP Shell Bar Shadow */
+.sap-shell-bar {
+  background-color: #354a5f;
+  color: #ffffff;
+  box-shadow: 0 0.125rem 0.25rem 0 rgba(0, 0, 0, 0.15);
+}
+
+/* SAP Table Styling */
+.sap-table-header {
+  background-color: #f7f7f7;
+  border-bottom: 1px solid #dee2e6;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.sap-table-row {
+  border-bottom: 1px solid #f2f2f2;
+}
+
+.sap-table-row:hover {
+  background-color: #f0f4f7;
+}
+
+/* SAP Tile Styling */
+.sap-tile {
+  @apply bg-white border border-border p-4 transition-all duration-200;
+  box-shadow: 0 0 0.125rem 0 rgba(0, 0, 0, 0.1);
+}
+
+.sap-tile:hover {
+  box-shadow: 0 0 0.5rem 0 rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
 }
 
 /* Custom Scrollbar for dense data panels */

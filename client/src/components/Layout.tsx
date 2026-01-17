@@ -17,86 +17,91 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
 
   const navItems = [
-    { href: "/", label: "لوحة التحكم", icon: LayoutDashboard },
-    { href: "/logs", label: "سجل الصفقات", icon: Activity },
-    { href: "/settings", label: "الإعدادات", icon: Settings },
+    { href: "/", label: "نظرة عامة على النظام", icon: LayoutDashboard },
+    { href: "/logs", label: "سجل العمليات التقني", icon: Activity },
+    { href: "/settings", label: "تهيئة النظام", icon: Settings },
   ];
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row rtl" dir="rtl">
-      {/* Sidebar */}
-      <aside className="w-full md:w-64 bg-card border-l border-border flex flex-col h-screen sticky top-0">
-        <div className="p-6 border-b border-border flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
-            <Bot className="w-6 h-6" />
+    <div className="min-h-screen bg-background text-foreground flex flex-col rtl" dir="rtl">
+      {/* SAP Shell Bar */}
+      <header className="sap-shell-bar h-12 flex items-center justify-between px-4 z-50 sticky top-0 w-full">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2">
+            <Bot className="w-6 h-6 text-white" />
+            <h1 className="font-bold text-sm text-white font-display uppercase tracking-wider">Trading ERP</h1>
           </div>
-          <div>
-            <h1 className="font-bold text-lg font-display tracking-tight">بوت التداول الذكي</h1>
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              متصل بالشبكة
-            </span>
-          </div>
+          
+          <nav className="hidden md:flex items-center h-full">
+            {navItems.map((item) => {
+              const isActive = location === item.href;
+              return (
+                <Link 
+                  key={item.href} 
+                  href={item.href}
+                  className={cn(
+                    "h-12 flex items-center px-4 text-xs font-semibold transition-colors border-b-2",
+                    isActive 
+                      ? "border-white bg-white/10 text-white" 
+                      : "border-transparent text-white/80 hover:bg-white/5 hover:text-white"
+                  )}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
         </div>
 
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location === item.href;
-            return (
-              <Link 
-                key={item.href} 
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200",
-                  isActive 
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" 
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
-              >
-                <Icon className="w-5 h-5" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="p-4 border-t border-border">
-          <div className="p-4 rounded-xl bg-secondary/30 mb-4 border border-border/50">
-            <div className="flex items-center gap-3 mb-2">
-              <ShieldCheck className="w-5 h-5 text-accent" />
-              <span className="text-sm font-semibold text-accent">حماية الذكاء الاصطناعي</span>
-            </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              المراقبة النشطة للمخاطر تعمل بكفاءة عالية. آخر تحديث منذ دقيقتين.
-            </p>
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex flex-col items-end">
+            <span className="text-[10px] text-white/70">المستخدم الحالي</span>
+            <span className="text-xs font-bold text-white">{user?.firstName} {user?.lastName}</span>
           </div>
-
-          <div className="flex items-center gap-3 px-2 mb-4">
-             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-purple-500" />
-             <div className="flex-1 overflow-hidden">
-               <p className="text-sm font-medium truncate">{user?.firstName || 'مستخدم'} {user?.lastName}</p>
-               <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-             </div>
-          </div>
-
           <button
             onClick={() => logout()}
-            className="w-full flex items-center gap-2 px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+            className="p-2 hover:bg-white/10 rounded transition-colors text-white"
+            title="تسجيل الخروج"
           >
             <LogOut className="w-4 h-4" />
-            تسجيل الخروج
           </button>
         </div>
-      </aside>
+      </header>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto bg-background/50 relative">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1642543492481-44e81e3914a7?q=80&w=2070&auto=format&fit=crop')] opacity-[0.02] mix-blend-overlay pointer-events-none bg-cover bg-center bg-no-repeat fixed" />
-        <div className="max-w-7xl mx-auto p-4 md:p-8 relative z-10">
-          {children}
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col">
+        {/* Breadcrumbs or Subheader (SAP Style) */}
+        <div className="bg-white border-b border-border px-4 py-2 flex items-center justify-between shadow-sm">
+           <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+             <span>النظام الرئيسي</span>
+             <span>/</span>
+             <span className="font-bold text-foreground">
+               {navItems.find(i => i.href === location)?.label || "الصفحة الحالية"}
+             </span>
+           </div>
+           <div className="flex items-center gap-2">
+             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-100 border border-green-200">
+               <span className="w-1.5 h-1.5 rounded-full bg-green-600" />
+               <span className="text-[10px] font-bold text-green-700">متصل بالشبكة</span>
+             </div>
+           </div>
         </div>
-      </main>
+
+        <main className="flex-1 p-4 md:p-6 bg-[#eff2f5]">
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
+        </main>
+      </div>
+
+      {/* SAP Footer Bar */}
+      <footer className="h-8 bg-white border-t border-border flex items-center px-4 text-[10px] text-muted-foreground justify-between">
+        <p>© 2026 Trading ERP System | All Rights Reserved</p>
+        <div className="flex items-center gap-4">
+          <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3 text-accent" /> حماية النشطة</span>
+          <span>v1.0.4-SAP</span>
+        </div>
+      </footer>
     </div>
   );
 }
