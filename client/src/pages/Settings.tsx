@@ -30,12 +30,12 @@ export default function Settings() {
   const [newKeyForm, setNewKeyForm] = useState({ platformId: "", apiKey: "", apiSecret: "", label: "" });
   const [newAiForm, setNewAiForm] = useState({ name: "", provider: "", baseUrl: "", apiKey: "" });
   const AI_PROVIDERS = [
-    { id: "openai", name: "OpenAI", baseUrl: "https://api.openai.com/v1" },
-    { id: "anthropic", name: "Anthropic", baseUrl: "https://api.anthropic.com/v1" },
-    { id: "google", name: "Google Gemini", baseUrl: "https://generativelanguage.googleapis.com/v1beta" },
-    { id: "deepseek", name: "DeepSeek", baseUrl: "https://api.deepseek.com/v1" },
-    { id: "groq", name: "Groq", baseUrl: "https://api.groq.com/openai/v1" },
-    { id: "custom", name: "Custom / Local (Ollama)", baseUrl: "http://localhost:11434/v1" },
+    { id: "openai", name: "OpenAI", baseUrl: "https://api.openai.com/v1", models: ["gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"] },
+    { id: "anthropic", name: "Anthropic", baseUrl: "https://api.anthropic.com/v1", models: ["claude-3-5-sonnet", "claude-3-opus", "claude-3-haiku"] },
+    { id: "google", name: "Google Gemini", baseUrl: "https://generativelanguage.googleapis.com/v1beta", models: ["gemini-1.5-pro", "gemini-1.5-flash"] },
+    { id: "deepseek", name: "DeepSeek", baseUrl: "https://api.deepseek.com/v1", models: ["deepseek-chat", "deepseek-reasoner"] },
+    { id: "groq", name: "Groq", baseUrl: "https://api.groq.com/openai/v1", models: ["llama-3-70b-versatile", "mixtral-8x7b-32768"] },
+    { id: "custom", name: "Custom / Local (Ollama)", baseUrl: "http://localhost:11434/v1", models: [] },
   ];
 
   const handleAiProviderChange = (providerId: string) => {
@@ -44,13 +44,15 @@ export default function Settings() {
       setNewAiForm({
         ...newAiForm,
         provider: provider.name,
-        baseUrl: provider.baseUrl
+        baseUrl: provider.baseUrl,
+        name: provider.models[0] || ""
       });
     } else {
       setNewAiForm({
         ...newAiForm,
         provider: providerId,
-        baseUrl: ""
+        baseUrl: "",
+        name: ""
       });
     }
   };
@@ -364,8 +366,28 @@ export default function Settings() {
               createAiModel(newAiForm, { onSuccess: () => { setIsAiModalOpen(false); setNewAiForm({ name: "", provider: "", baseUrl: "", apiKey: "" }); } });
             }} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">اسم النموذج</label>
-                <input required className="w-full p-3 rounded-xl bg-background border border-border outline-none" placeholder="GPT-4o, Claude-3" value={newAiForm.name} onChange={(e) => setNewAiForm({...newAiForm, name: e.target.value})} />
+                <label className="text-sm font-medium">اسم النموذج (Model Name)</label>
+                {(() => {
+                  const currentProvider = AI_PROVIDERS.find(p => p.name === newAiForm.provider);
+                  if (currentProvider && currentProvider.models.length > 0) {
+                    return (
+                      <select 
+                        required 
+                        className="w-full p-3 rounded-xl bg-background border border-border outline-none"
+                        value={newAiForm.name}
+                        onChange={(e) => setNewAiForm({...newAiForm, name: e.target.value})}
+                      >
+                        <option value="">اختر الموديل...</option>
+                        {currentProvider.models.map((m) => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </select>
+                    );
+                  }
+                  return (
+                    <input required className="w-full p-3 rounded-xl bg-background border border-border outline-none" placeholder="مثال: gpt-4o" value={newAiForm.name} onChange={(e) => setNewAiForm({...newAiForm, name: e.target.value})} />
+                  );
+                })()}
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">المزود (Provider)</label>
