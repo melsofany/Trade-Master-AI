@@ -27,14 +27,9 @@ export function AppSidebar({ side = "right" }: { side?: "left" | "right" }) {
 
   return (
     <Sidebar side={side} collapsible="icon">
-      <SidebarHeader className="p-4 border-b">
-        <div className="flex items-center justify-center gap-2">
-          <div className="font-bold text-xl text-primary truncate">القائمة الرئيسية</div>
-        </div>
-      </SidebarHeader>
       <SidebarContent className="flex-1">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-right px-4">التطبيق</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-right px-4 text-primary font-bold text-lg">القائمة الرئيسية</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
