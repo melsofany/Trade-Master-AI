@@ -37,10 +37,31 @@ export function useAuth() {
     },
   });
 
+  const loginMutation = useMutation({
+    mutationFn: async (credentials: any) => {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(credentials),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "فشل تسجيل الدخول");
+      }
+
+      return response.json();
+    },
+    onSuccess: (user) => {
+      queryClient.setQueryData(["/api/auth/user"], user);
+    },
+  });
+
   return {
     user,
     isLoading,
     isAuthenticated: !!user,
+    loginMutation,
     logout: logoutMutation.mutate,
     isLoggingOut: logoutMutation.isPending,
   };
