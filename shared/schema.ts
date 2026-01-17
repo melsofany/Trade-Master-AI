@@ -65,12 +65,24 @@ export const aiLogs = pgTable("ai_logs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// === User Balances (per platform) ===
+export const userBalances = pgTable("user_balances", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  platformId: integer("platform_id").notNull().references(() => platforms.id),
+  asset: text("asset").notNull(), // BTC, ETH, USDT
+  balance: numeric("balance").default("0"),
+  valueUsdt: numeric("value_usdt").default("0"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // === Zod Schemas ===
 export const insertPlatformSchema = createInsertSchema(platforms);
 export const insertUserApiKeySchema = createInsertSchema(userApiKeys).omit({ id: true, createdAt: true });
 export const insertBotSettingsSchema = createInsertSchema(botSettings).omit({ id: true, updatedAt: true });
 export const insertTradeLogSchema = createInsertSchema(tradeLogs).omit({ id: true, executedAt: true });
 export const insertAiLogSchema = createInsertSchema(aiLogs).omit({ id: true, createdAt: true });
+export const insertUserBalanceSchema = createInsertSchema(userBalances).omit({ id: true, updatedAt: true });
 
 // === Types ===
 export type Platform = typeof platforms.$inferSelect;
@@ -78,11 +90,13 @@ export type UserApiKey = typeof userApiKeys.$inferSelect;
 export type BotSettings = typeof botSettings.$inferSelect;
 export type TradeLog = typeof tradeLogs.$inferSelect;
 export type AiLog = typeof aiLogs.$inferSelect;
+export type UserBalance = typeof userBalances.$inferSelect;
 
 export type InsertPlatform = z.infer<typeof insertPlatformSchema>;
 export type InsertUserApiKey = z.infer<typeof insertUserApiKeySchema>;
 export type InsertBotSettings = z.infer<typeof insertBotSettingsSchema>;
 export type InsertTradeLog = z.infer<typeof insertTradeLogSchema>;
+export type InsertUserBalance = z.infer<typeof insertUserBalanceSchema>;
 
 // Export auth models too so they are available
 export * from "./models/auth";

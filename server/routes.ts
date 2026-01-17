@@ -23,6 +23,13 @@ export async function registerRoutes(
     res.json(platforms);
   });
 
+  // Balances
+  app.get("/api/balances", async (req: any, res) => {
+    const userId = req.user?.claims?.sub || "default_user";
+    const balances = await storage.getUserBalances(userId);
+    res.json(balances);
+  });
+
   // Settings (Public for bypass)
   app.get(api.settings.get.path, async (req: any, res) => {
     const userId = req.user?.claims?.sub || "default_user";

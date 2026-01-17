@@ -1,10 +1,10 @@
 import {
-  platforms, userApiKeys, botSettings, tradeLogs, aiLogs,
-  type Platform, type UserApiKey, type BotSettings, type TradeLog, type AiLog,
-  type InsertPlatform, type InsertUserApiKey, type InsertBotSettings, type InsertTradeLog
+  platforms, userApiKeys, botSettings, tradeLogs, aiLogs, userBalances,
+  type Platform, type UserApiKey, type BotSettings, type TradeLog, type AiLog, type UserBalance,
+  type InsertPlatform, type InsertUserApiKey, type InsertBotSettings, type InsertTradeLog, type InsertUserBalance
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 
 export interface IStorage {
   // Platforms
@@ -25,10 +25,14 @@ export interface IStorage {
   getTradeLogs(userId: string): Promise<TradeLog[]>;
   createTradeLog(log: InsertTradeLog): Promise<TradeLog>;
   getDashboardStats(userId: string): Promise<{ totalProfit: number, tradesToday: number }>;
+
+  // Balances
+  getUserBalances(userId: string): Promise<UserBalance[]>;
+  upsertUserBalance(balance: InsertUserBalance): Promise<UserBalance>;
 }
 
 export class DatabaseStorage implements IStorage {
-  // Platforms
+  // ... (existing methods remain the same)
   async getPlatforms(): Promise<Platform[]> {
     return await db.select().from(platforms);
   }
@@ -43,7 +47,6 @@ export class DatabaseStorage implements IStorage {
     return newPlatform;
   }
 
-  // Settings
   async getBotSettings(userId: string): Promise<BotSettings | undefined> {
     const [settings] = await db.select().from(botSettings).where(eq(botSettings.userId, userId));
     return settings;
@@ -64,7 +67,6 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // API Keys
   async getUserApiKeys(userId: string): Promise<UserApiKey[]> {
     return await db.select().from(userApiKeys).where(eq(userApiKeys.userId, userId));
   }
@@ -78,7 +80,6 @@ export class DatabaseStorage implements IStorage {
     await db.delete(userApiKeys).where(and(eq(userApiKeys.id, id), eq(userApiKeys.userId, userId)));
   }
 
-  // Logs
   async getTradeLogs(userId: string): Promise<TradeLog[]> {
     return await db.select().from(tradeLogs)
       .where(eq(tradeLogs.userId, userId))
@@ -94,7 +95,6 @@ export class DatabaseStorage implements IStorage {
     const logs = await this.getTradeLogs(userId);
     const totalProfit = logs.reduce((sum, log) => sum + Number(log.profitUsdt || 0), 0);
     
-    // Simple today check
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tradesToday = logs.filter(log => {
@@ -103,6 +103,32 @@ export class DatabaseStorage implements IStorage {
     }).length;
 
     return { totalProfit, tradesToday };
+  }
+
+  // Balances
+  async getUserBalances(userId: string): Promise<UserBalance[]> {
+    return await db.select().from(userBalances).where(eq(userBalances.userId, userId));
+  }
+
+  async upsertUserBalance(balance: InsertUserBalance): Promise<UserBalance> {
+    const [existing] = await db.select().from(userBalances).where(
+      and(
+        eq(userBalances.userId, balance.userId),
+        eq(userBalances.platformId, balance.platformId),
+        eq(userBalances.asset, balance.asset)
+      )
+    );
+
+    if (existing) {
+      const [updated] = await db.update(userBalances)
+        .set({ ...balance, updatedAt: new Date() })
+        .where(eq(userBalances.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db.insert(userBalances).values(balance).returning();
+      return created;
+    }
   }
 }
 

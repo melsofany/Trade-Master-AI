@@ -22,6 +22,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { href: "/", label: "نظرة عامة على النظام", icon: LayoutDashboard },
+    { href: "/accounts", label: "الحسابات والتقارير", icon: ShieldCheck },
     { href: "/logs", label: "سجل العمليات التقني", icon: Activity },
     { href: "/settings", label: "تهيئة النظام", icon: Settings },
   ];
