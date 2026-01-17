@@ -15,7 +15,7 @@ import { LayoutDashboard, Settings, ScrollText, LogOut, LogIn, User } from "luci
 import { Link, useLocation } from "wouter";
 
 export function AppSidebar() {
-  const { user, logoutMutation } = useAuth();
+  const { user, logout, isLoggingOut } = useAuth();
   const [location] = useLocation();
 
   const menuItems = [
@@ -57,11 +57,11 @@ export function AppSidebar() {
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-2 px-2 py-1.5 text-sm">
                   <User className="h-4 w-4" />
-                  <span className="truncate">{user.username}</span>
+                  <span className="truncate">{user.email || 'User'}</span>
                 </div>
                 <SidebarMenuButton
-                  onClick={() => logoutMutation.mutate()}
-                  disabled={logoutMutation.isPending}
+                  onClick={() => logout()}
+                  disabled={isLoggingOut}
                   className="w-full justify-start text-destructive hover:text-destructive"
                 >
                   <LogOut className="h-4 w-4" />
