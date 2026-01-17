@@ -30,13 +30,17 @@ export function getSession() {
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
-    resave: true, // Force session to be saved back to the session store
-    saveUninitialized: true, // Force a session that is "uninitialized" to be saved to the store
+    resave: true,
+    saveUninitialized: true,
+    name: "trading_erp_session",
+    proxy: true,
     cookie: {
       httpOnly: true,
-      secure: false, // Set to false for Replit dev environment
+      secure: false,
       sameSite: "lax",
       maxAge: sessionTtl,
+      path: "/",
+      domain: undefined,
     },
   });
 }

@@ -22,14 +22,23 @@ export async function registerRoutes(
     const adminPass = process.env.ADMIN_PASSWORD;
 
     if (username === adminUser && password === adminPass) {
-      (req.session as any).isAuthenticated = true;
-      (req.session as any).user = { username: adminUser, firstName: "Admin", lastName: "" };
-      req.session.save((err) => {
+      // Clear existing session data
+      req.session.regenerate((err) => {
         if (err) {
-          console.error("Session save error:", err);
-          return res.status(500).json({ message: "خطأ في حفظ الجلسة" });
+          console.error("Session regeneration error:", err);
+          return res.status(500).json({ message: "خطأ في إنشاء الجلسة" });
         }
-        res.json({ success: true });
+
+        (req.session as any).isAuthenticated = true;
+        (req.session as any).user = { username: adminUser, firstName: "Admin", lastName: "" };
+        
+        req.session.save((err) => {
+          if (err) {
+            console.error("Session save error:", err);
+            return res.status(500).json({ message: "خطأ في حفظ الجلسة" });
+          }
+          res.json({ success: true });
+        });
       });
     } else {
       res.status(401).json({ message: "اسم المستخدم أو كلمة المرور غير صحيحة" });
