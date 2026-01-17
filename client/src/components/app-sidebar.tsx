@@ -26,22 +26,27 @@ export function AppSidebar({ side = "right" }: { side?: "left" | "right" }) {
 
   return (
     <Sidebar side={side} collapsible="icon">
-      <SidebarHeader className="p-4">
-        <div className="flex items-center gap-2 font-bold text-xl justify-end">
+      <SidebarHeader className="p-4 border-b">
+        <div className="flex items-center gap-2 font-bold text-xl justify-center">
           <span className="text-primary">بوت التداول</span>
         </div>
       </SidebarHeader>
-      <SidebarContent dir="rtl">
+      <SidebarContent className="flex-1">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-right">التطبيق</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-right px-4">التطبيق</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={location === item.url} tooltip={item.title} className="flex-row-reverse justify-start">
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={location === item.url} 
+                    tooltip={item.title} 
+                    className="flex-row-reverse gap-3 px-4"
+                  >
                     <Link href={item.url}>
-                      <item.icon className="h-4 w-4 ml-2 mr-0" />
-                      <span>{item.title}</span>
+                      <item.icon className="h-4 w-4 shrink-0" />
+                      <span className="flex-1 text-right">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -50,29 +55,29 @@ export function AppSidebar({ side = "right" }: { side?: "left" | "right" }) {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4 border-t" dir="rtl">
+      <SidebarFooter className="p-4 border-t">
         <SidebarMenu>
           <SidebarMenuItem>
             {user ? (
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2 px-2 py-1.5 text-sm flex-row-reverse justify-start">
-                  <User className="h-4 w-4 ml-2 mr-0" />
-                  <span className="truncate">{user.email || 'مستخدم'}</span>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-3 px-2 py-1.5 text-sm flex-row-reverse">
+                  <User className="h-4 w-4 shrink-0" />
+                  <span className="truncate flex-1 text-right font-medium">{user.email || 'مستخدم'}</span>
                 </div>
                 <SidebarMenuButton
                   onClick={() => logout()}
                   disabled={isLoggingOut}
-                  className="w-full text-destructive hover:text-destructive flex-row-reverse justify-start"
+                  className="w-full text-destructive hover:text-destructive flex-row-reverse gap-3 px-2"
                 >
-                  <LogOut className="h-4 w-4 ml-2 mr-0" />
-                  <span>تسجيل الخروج</span>
+                  <LogOut className="h-4 w-4 shrink-0" />
+                  <span className="flex-1 text-right">تسجيل الخروج</span>
                 </SidebarMenuButton>
               </div>
             ) : (
-              <SidebarMenuButton asChild className="w-full flex-row-reverse justify-start">
+              <SidebarMenuButton asChild className="w-full flex-row-reverse gap-3 px-2">
                 <Link href="/auth">
-                  <LogIn className="h-4 w-4 ml-2 mr-0" />
-                  <span>تسجيل الدخول</span>
+                  <LogIn className="h-4 w-4 shrink-0" />
+                  <span className="flex-1 text-right">تسجيل الدخول</span>
                 </Link>
               </SidebarMenuButton>
             )}
