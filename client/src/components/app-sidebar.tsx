@@ -20,9 +20,9 @@ export function AppSidebar({ side = "right" }: { side?: "left" | "right" }) {
   const [location] = useLocation();
 
   const menuItems = [
-    { title: "نظرة عامة على النظام", icon: LayoutDashboard, url: "/" },
-    { title: "سجل العمليات التقني", icon: ScrollText, url: "/logs" },
-    { title: "تهيئة النظام", icon: Settings, url: "/settings" },
+    { title: "الرئيسية", icon: LayoutDashboard, url: "/" },
+    { title: "سجل العمليات", icon: ScrollText, url: "/logs" },
+    { title: "الإعدادات", icon: Settings, url: "/settings" },
   ];
 
   return (
