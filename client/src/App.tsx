@@ -45,10 +45,10 @@ function App() {
       <TooltipProvider>
         <SidebarProvider style={style as React.CSSProperties}>
           <div className="flex h-screen w-full">
-            <AppSidebar />
+            <AppSidebar side="right" />
             <div className="flex flex-col flex-1 overflow-hidden">
               <header className="flex h-14 items-center gap-4 border-b bg-background px-4">
-                <SidebarTrigger data-testid="button-sidebar-toggle" />
+                <SidebarTrigger data-testid="button-sidebar-toggle" className="order-last mr-auto ml-0" />
               </header>
               <main className="flex-1 overflow-auto">
                 <Router />
