@@ -4,9 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/use-auth";
-import { Loader2, LayoutDashboard } from "lucide-react";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
+import { Loader2 } from "lucide-react";
 
 import Dashboard from "@/pages/Dashboard";
 import Settings from "@/pages/Settings";
@@ -35,31 +33,18 @@ function Router() {
 }
 
 function App() {
-  const style = {
-    "--sidebar-width": "16rem",
-    "--sidebar-width-icon": "3rem",
-  };
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <SidebarProvider style={style as React.CSSProperties}>
-          <div className="flex h-screen w-full">
-            <AppSidebar side="right" />
-            <div className="flex flex-col flex-1 overflow-hidden">
-              <header className="flex h-14 items-center justify-between border-b bg-background px-4">
-                <div className="flex items-center gap-2">
-                  <SidebarTrigger data-testid="button-sidebar-toggle" className="h-9 w-9" />
-                  <h1 className="text-lg font-semibold text-primary">الرئيسية</h1>
-                </div>
-              </header>
-              <main className="flex-1 overflow-auto">
-                <Router />
-              </main>
-            </div>
-          </div>
-          <Toaster />
-        </SidebarProvider>
+        <div className="flex flex-col h-screen w-full overflow-hidden">
+          <header className="flex h-14 items-center justify-between border-b bg-background px-4 shrink-0">
+            <h1 className="text-lg font-semibold text-primary">الرئيسية</h1>
+          </header>
+          <main className="flex-1 overflow-auto bg-slate-50">
+            <Router />
+          </main>
+        </div>
+        <Toaster />
       </TooltipProvider>
     </QueryClientProvider>
   );
