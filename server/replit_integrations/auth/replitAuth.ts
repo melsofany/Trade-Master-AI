@@ -30,8 +30,8 @@ export function getSession() {
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
-    resave: true,
-    saveUninitialized: true,
+    resave: false,
+    saveUninitialized: false,
     name: "trading_erp_session",
     proxy: true,
     cookie: {
@@ -40,9 +40,8 @@ export function getSession() {
       sameSite: "lax",
       maxAge: sessionTtl,
       path: "/",
-      domain: undefined,
     },
-    rolling: true, // Ensures session is refreshed on each request
+    rolling: true, 
   });
 }
 

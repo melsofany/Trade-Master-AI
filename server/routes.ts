@@ -32,15 +32,17 @@ export async function registerRoutes(
         (req.session as any).isAuthenticated = true;
         (req.session as any).user = { username: adminUser, firstName: "Admin", lastName: "" };
         
-        req.session.save((err) => {
-          if (err) {
-            console.error("Session save error:", err);
-            return res.status(500).json({ message: "خطأ في حفظ الجلسة" });
+        // Use req.login before saving session to ensure passport state is serialized
+        req.login((req.session as any).user, (loginErr) => {
+          if (loginErr) {
+            console.error("Passport login error:", loginErr);
+            return res.status(500).json({ message: "خطأ في تسجيل الدخول" });
           }
-          // Important: Sync session with passport for isAuthenticated() consistency
-          req.login((req.session as any).user, (loginErr) => {
-            if (loginErr) {
-              console.error("Passport login error:", loginErr);
+          
+          req.session.save((err) => {
+            if (err) {
+              console.error("Session save error:", err);
+              return res.status(500).json({ message: "خطأ في حفظ الجلسة" });
             }
             res.json({ success: true });
           });
@@ -58,6 +60,9 @@ export async function registerRoutes(
   });
 
   app.get("/api/auth/user", (req, res) => {
+    console.log("Session User:", (req.session as any).user);
+    console.log("Passport User:", req.user);
+    console.log("Is Authenticated (Passport):", req.isAuthenticated());
     if ((req.session as any).isAuthenticated || req.isAuthenticated()) {
       const user = (req.session as any).user || req.user;
       res.json(user);
