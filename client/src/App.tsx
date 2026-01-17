@@ -48,8 +48,9 @@ function App() {
             <AppSidebar side="right" />
             <div className="flex flex-col flex-1 overflow-hidden">
               <header className="flex h-14 items-center justify-between border-b bg-background px-4">
-                <div className="flex items-center">
-                  <h1 className="text-lg font-semibold text-primary">لوحة التحكم</h1>
+                <div className="flex items-center gap-2">
+                  <SidebarTrigger data-testid="button-sidebar-toggle" className="h-9 w-9" />
+                  <h1 className="text-lg font-semibold text-primary">نظرة عامة على النظام</h1>
                 </div>
                 <div className="flex items-center gap-4">
                   {/* Space for header actions */}

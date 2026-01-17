@@ -28,8 +28,7 @@ export function AppSidebar({ side = "right" }: { side?: "left" | "right" }) {
   return (
     <Sidebar side={side} collapsible="icon">
       <SidebarHeader className="p-4 border-b">
-        <div className="flex items-center justify-between gap-2">
-          <SidebarTrigger className="h-8 w-8" />
+        <div className="flex items-center justify-center gap-2">
           <div className="font-bold text-xl text-primary truncate">القائمة الرئيسية</div>
         </div>
       </SidebarHeader>
