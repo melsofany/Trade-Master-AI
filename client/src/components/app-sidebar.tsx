@@ -20,9 +20,9 @@ export function AppSidebar({ side = "right" }: { side?: "left" | "right" }) {
   const [location] = useLocation();
 
   const menuItems = [
-    { title: "لوحة التحكم", icon: LayoutDashboard, url: "/" },
-    { title: "السجلات", icon: ScrollText, url: "/logs" },
-    { title: "الإعدادات", icon: Settings, url: "/settings" },
+    { title: "نظرة عامة على النظام", icon: LayoutDashboard, url: "/" },
+    { title: "سجل العمليات التقني", icon: ScrollText, url: "/logs" },
+    { title: "تهيئة النظام", icon: Settings, url: "/settings" },
   ];
 
   return (
@@ -30,7 +30,7 @@ export function AppSidebar({ side = "right" }: { side?: "left" | "right" }) {
       <SidebarHeader className="p-4 border-b">
         <div className="flex items-center justify-between gap-2">
           <SidebarTrigger className="h-8 w-8" />
-          <div className="font-bold text-xl text-primary truncate">بوت التداول</div>
+          <div className="font-bold text-xl text-primary truncate">القائمة الرئيسية</div>
         </div>
       </SidebarHeader>
       <SidebarContent className="flex-1">
