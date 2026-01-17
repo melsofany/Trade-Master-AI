@@ -60,9 +60,7 @@ export async function registerRoutes(
   });
 
   app.get("/api/auth/user", (req, res) => {
-    console.log("Session User:", (req.session as any).user);
-    console.log("Passport User:", req.user);
-    console.log("Is Authenticated (Passport):", req.isAuthenticated());
+    // Check both session and passport
     if ((req.session as any).isAuthenticated || req.isAuthenticated()) {
       const user = (req.session as any).user || req.user;
       res.json(user);

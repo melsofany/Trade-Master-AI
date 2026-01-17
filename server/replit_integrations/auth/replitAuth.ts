@@ -30,14 +30,14 @@ export function getSession() {
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
-    resave: false,
-    saveUninitialized: false,
+    resave: true, // Force session to be saved back to the session store
+    saveUninitialized: true, // Force session that is "uninitialized" to be saved to the store
     name: "trading_erp_session",
     proxy: true,
     cookie: {
       httpOnly: true,
-      secure: false,
-      sameSite: "lax",
+      secure: true, // Use secure cookies
+      sameSite: "none", // Required for cross-site cookie in iframe
       maxAge: sessionTtl,
       path: "/",
     },
