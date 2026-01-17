@@ -16,7 +16,7 @@ import {
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { motion } from "framer-motion";
 
-// Simulated Chart Data (since no historical endpoint)
+// Simulated Chart Data
 const chartData = [
   { time: "00:00", spread: 0.2 },
   { time: "04:00", spread: 0.4 },
@@ -54,191 +54,168 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center h-[80vh]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        </div>
-      </Layout>
+      <div className="flex items-center justify-center h-[80vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
     );
   }
 
   return (
-    <Layout>
-      <motion.div 
-        variants={container}
-        initial="hidden"
-        animate="show"
-        className="space-y-8"
-      >
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-3xl font-bold text-foreground font-display">لوحة التحكم</h2>
-            <p className="text-muted-foreground mt-1">مراقبة حية للأسواق والفرص الاستثمارية</p>
-          </div>
-          <div className="flex items-center gap-3">
-             <span className="px-3 py-1 rounded-full bg-green-500/10 text-green-500 text-sm font-medium border border-green-500/20 flex items-center gap-2">
-               <span className="w-2 h-2 rounded-full bg-green-500 animate-ping" />
-               السوق نشط
-             </span>
-          </div>
+    <motion.div 
+      variants={container}
+      initial="hidden"
+      animate="show"
+      className="space-y-8"
+    >
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-bold text-foreground font-display">لوحة التحكم</h2>
+          <p className="text-muted-foreground mt-1">مراقبة حية للأسواق والفرص الاستثمارية</p>
         </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatsCard 
-            title="إجمالي الأرباح" 
-            value={formatCurrency(stats?.totalProfit || 0)} 
-            icon={Wallet} 
-            trend="+12.5%" 
-            trendUp={true} 
-            color="text-emerald-500"
-          />
-          <StatsCard 
-            title="الصفقات اليوم" 
-            value={stats?.tradesToday || 0} 
-            icon={Activity} 
-            trend="+5" 
-            trendUp={true}
-            color="text-blue-500"
-          />
-          <StatsCard 
-            title="درجة المخاطرة" 
-            value={(stats?.riskScore || 0) + "%"} 
-            icon={AlertTriangle} 
-            trend="-2%" 
-            trendUp={false} // Low risk is good
-            goodTrendIsDown={true}
-            color="text-amber-500"
-          />
-          <StatsCard 
-            title="البوتات النشطة" 
-            value={stats?.activeBots || 0} 
-            icon={Bot} 
-            trend="مستقر" 
-            color="text-purple-500"
-          />
+        <div className="flex items-center gap-3">
+           <span className="px-3 py-1 rounded-full bg-green-500/10 text-green-500 text-sm font-medium border border-green-500/20 flex items-center gap-2">
+             <span className="w-2 h-2 rounded-full bg-green-500 animate-ping" />
+             السوق نشط
+           </span>
         </div>
+      </div>
 
-        {/* Charts & AI Insight */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Chart */}
-          <motion.div variants={item} className="lg:col-span-2 glass-panel rounded-2xl p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-primary" />
-                تحليل الفروقات السعرية (Arbitrage Spread)
-              </h3>
-              <select className="bg-secondary/50 border border-border rounded-lg text-sm px-3 py-1 outline-none focus:ring-2 focus:ring-primary/20">
-                <option>آخر 24 ساعة</option>
-                <option>آخر أسبوع</option>
-              </select>
-            </div>
-            <div className="h-[300px] w-full" dir="ltr">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData}>
-                  <defs>
-                    <linearGradient id="colorSpread" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                  <XAxis dataKey="time" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} unit="%" />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }}
-                    itemStyle={{ color: 'hsl(var(--foreground))' }}
-                  />
-                  <Area type="monotone" dataKey="spread" stroke="hsl(var(--primary))" strokeWidth={3} fillOpacity={1} fill="url(#colorSpread)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </motion.div>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatsCard 
+          title="إجمالي الأرباح" 
+          value={formatCurrency(stats?.totalProfit || 0)} 
+          icon={Wallet} 
+          trend="+12.5%" 
+          trendUp={true} 
+          color="text-emerald-500"
+        />
+        <StatsCard 
+          title="الصفقات اليوم" 
+          value={stats?.tradesToday || 0} 
+          icon={Activity} 
+          trend="+5" 
+          trendUp={true}
+          color="text-blue-500"
+        />
+        <StatsCard 
+          title="درجة المخاطرة" 
+          value={(stats?.riskScore || 0) + "%"} 
+          icon={AlertTriangle} 
+          trend="-2%" 
+          trendUp={false} 
+          goodTrendIsDown={true}
+          color="text-amber-500"
+        />
+        <StatsCard 
+          title="البوتات النشطة" 
+          value={stats?.activeBots || 0} 
+          icon={Bot} 
+          trend="مستقر" 
+          color="text-purple-500"
+        />
+      </div>
 
-          {/* AI Panel */}
-          <motion.div variants={item} className="glass-panel rounded-2xl p-6 flex flex-col relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
-              <BrainCircuit className="w-32 h-32 text-primary" />
-            </div>
-            <h3 className="text-lg font-bold flex items-center gap-2 mb-4 relative z-10">
-              <BrainCircuit className="w-5 h-5 text-purple-500" />
-              تحليل الذكاء الاصطناعي
-            </h3>
-            
-            <div className="flex-1 space-y-4 overflow-y-auto pr-2 relative z-10 custom-scrollbar">
-              <AILogMessage 
-                time="10:42:15" 
-                text="تحليل أخبار Binance: لا توجد مخاطر تنظيمية جديدة. الشبكة مستقرة."
-                sentiment="positive"
-              />
-              <AILogMessage 
-                time="10:41:02" 
-                text="رصد ارتفاع مفاجئ في رسوم غاز الإيثيريوم. تم تعليق صفقات ETH مؤقتاً."
-                sentiment="negative"
-              />
-              <AILogMessage 
-                time="10:38:55" 
-                text="فحص سيولة زوج SOL/USDT على منصة OKX. السيولة كافية للتنفيذ."
-                sentiment="neutral"
-              />
-              <AILogMessage 
-                time="10:35:12" 
-                text="مقارنة الأسعار بين 5 منصات... تم العثور على فرصة ربح 1.2%."
-                sentiment="positive"
-              />
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Live Opportunities Table */}
-        <motion.div variants={item} className="glass-panel rounded-2xl overflow-hidden">
-          <div className="p-6 border-b border-border flex items-center justify-between">
+      {/* Charts & AI Insight */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <motion.div variants={item} className="lg:col-span-2 glass-panel rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-bold flex items-center gap-2">
-              <Zap className="w-5 h-5 text-yellow-500" />
-              الفرص المتاحة حالياً
+              <TrendingUp className="w-5 h-5 text-primary" />
+              تحليل الفروقات السعرية (Arbitrage Spread)
             </h3>
+            <select className="bg-secondary/50 border border-border rounded-lg text-sm px-3 py-1 outline-none focus:ring-2 focus:ring-primary/20">
+              <option>آخر 24 ساعة</option>
+              <option>آخر أسبوع</option>
+            </select>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-secondary/30 text-muted-foreground">
-                  <th className="px-6 py-4 text-right font-medium">الزوج</th>
-                  <th className="px-6 py-4 text-right font-medium">منصة الشراء</th>
-                  <th className="px-6 py-4 text-right font-medium">منصة البيع</th>
-                  <th className="px-6 py-4 text-right font-medium">الفرق (Spread)</th>
-                  <th className="px-6 py-4 text-right font-medium">الحالة</th>
-                  <th className="px-6 py-4 text-right font-medium">الإجراء</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {opportunities.map((opp) => (
-                  <tr key={opp.id} className="hover:bg-secondary/20 transition-colors">
-                    <td className="px-6 py-4 font-bold ltr font-mono">{opp.pair}</td>
-                    <td className="px-6 py-4">{opp.buy}</td>
-                    <td className="px-6 py-4">{opp.sell}</td>
-                    <td className="px-6 py-4 text-emerald-500 font-bold font-mono" dir="ltr">{opp.spread}%</td>
-                    <td className="px-6 py-4">
-                      {opp.status === 'available' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-500">متاح للتنفيذ</span>}
-                      {opp.status === 'analyzing' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-500">جاري التحليل...</span>}
-                      {opp.status === 'risk_high' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-500">مخاطرة عالية</span>}
-                    </td>
-                    <td className="px-6 py-4">
-                      <button 
-                        disabled={opp.status !== 'available'}
-                        className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
-                      >
-                        تنفيذ الآن
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="h-[300px] w-full" dir="ltr">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="colorSpread" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis dataKey="time" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} unit="%" />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }}
+                  itemStyle={{ color: 'hsl(var(--foreground))' }}
+                />
+                <Area type="monotone" dataKey="spread" stroke="hsl(var(--primary))" strokeWidth={3} fillOpacity={1} fill="url(#colorSpread)" />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </motion.div>
+
+        <motion.div variants={item} className="glass-panel rounded-2xl p-6 flex flex-col relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+            <BrainCircuit className="w-32 h-32 text-primary" />
+          </div>
+          <h3 className="text-lg font-bold flex items-center gap-2 mb-4 relative z-10">
+            <BrainCircuit className="w-5 h-5 text-purple-500" />
+            تحليل الذكاء الاصطناعي
+          </h3>
+          <div className="flex-1 space-y-4 overflow-y-auto pr-2 relative z-10 custom-scrollbar">
+            <AILogMessage time="10:42:15" text="تحليل أخبار Binance: لا توجد مخاطر تنظيمية جديدة. الشبكة مستقرة." sentiment="positive" />
+            <AILogMessage time="10:41:02" text="رصد ارتفاع مفاجئ في رسوم غاز الإيثيريوم. تم تعليق صفقات ETH مؤقتاً." sentiment="negative" />
+            <AILogMessage time="10:38:55" text="فحص سيولة زوج SOL/USDT على منصة OKX. السيولة كافية للتنفيذ." sentiment="neutral" />
+            <AILogMessage time="10:35:12" text="مقارنة الأسعار بين 5 منصات... تم العثور على فرصة ربح 1.2%." sentiment="positive" />
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Live Opportunities Table */}
+      <motion.div variants={item} className="glass-panel rounded-2xl overflow-hidden">
+        <div className="p-6 border-b border-border flex items-center justify-between">
+          <h3 className="text-lg font-bold flex items-center gap-2">
+            <Zap className="w-5 h-5 text-yellow-500" />
+            الفرص المتاحة حالياً
+          </h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-secondary/30 text-muted-foreground">
+                <th className="px-6 py-4 text-right font-medium">الزوج</th>
+                <th className="px-6 py-4 text-right font-medium">منصة الشراء</th>
+                <th className="px-6 py-4 text-right font-medium">منصة البيع</th>
+                <th className="px-6 py-4 text-right font-medium">الفرق (Spread)</th>
+                <th className="px-6 py-4 text-right font-medium">الحالة</th>
+                <th className="px-6 py-4 text-right font-medium">الإجراء</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {opportunities.map((opp) => (
+                <tr key={opp.id} className="hover:bg-secondary/20 transition-colors">
+                  <td className="px-6 py-4 font-bold ltr font-mono">{opp.pair}</td>
+                  <td className="px-6 py-4">{opp.buy}</td>
+                  <td className="px-6 py-4">{opp.sell}</td>
+                  <td className="px-6 py-4 text-emerald-500 font-bold font-mono" dir="ltr">{opp.spread}%</td>
+                  <td className="px-6 py-4">
+                    {opp.status === 'available' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-500">متاح للتنفيذ</span>}
+                    {opp.status === 'analyzing' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-500">جاري التحليل...</span>}
+                    {opp.status === 'risk_high' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-500">مخاطرة عالية</span>}
+                  </td>
+                  <td className="px-6 py-4">
+                    <button 
+                      disabled={opp.status !== 'available'}
+                      className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
+                    >
+                      تنفيذ الآن
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </motion.div>
-    </Layout>
+    </motion.div>
   );
 }
 
@@ -259,7 +236,7 @@ function StatsCard({ title, value, icon: Icon, trend, trendUp, goodTrendIsDown, 
         <div className="flex items-end justify-between">
           <span className="text-3xl font-bold font-mono tracking-tighter">{value}</span>
           {trend && (
-            <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${isPositive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+            <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full \${isPositive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
               {isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
               <span dir="ltr">{trend}</span>
             </div>
@@ -276,9 +253,8 @@ function AILogMessage({ time, text, sentiment }: any) {
     negative: "border-rose-500/30 bg-rose-500/5",
     neutral: "border-blue-500/30 bg-blue-500/5"
   };
-
   return (
-    <div className={`p-3 rounded-lg border-r-2 ${colors[sentiment as keyof typeof colors]} text-sm`}>
+    <div className={`p-3 rounded-lg border-r-2 \${colors[sentiment as keyof typeof colors]} text-sm`}>
       <div className="flex items-center gap-2 mb-1">
         <span className="text-xs font-mono text-muted-foreground/70" dir="ltr">{time}</span>
       </div>
