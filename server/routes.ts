@@ -103,6 +103,30 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
+  // AI Models
+  app.get("/api/ai-models", async (req: any, res) => {
+    const userId = req.user?.claims?.sub || "default_user";
+    const models = await storage.getAiModels(userId);
+    res.json(models);
+  });
+
+  app.post("/api/ai-models", async (req: any, res) => {
+    const userId = req.user?.claims?.sub || "default_user";
+    try {
+      const model = await storage.createAiModel({ ...req.body, userId });
+      res.status(201).json(model);
+    } catch (err) {
+      res.status(400).json({ message: "Failed to create AI model" });
+    }
+  });
+
+  app.delete("/api/ai-models/:id", async (req: any, res) => {
+    const userId = req.user?.claims?.sub || "default_user";
+    const id = parseInt(req.params.id);
+    await storage.deleteAiModel(id, userId);
+    res.status(204).send();
+  });
+
   // Logs (Public for bypass)
   app.get(api.logs.list.path, async (req: any, res) => {
     const userId = req.user?.claims?.sub || "default_user";

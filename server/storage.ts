@@ -1,7 +1,7 @@
 import {
-  platforms, userApiKeys, botSettings, tradeLogs, aiLogs, userBalances,
-  type Platform, type UserApiKey, type BotSettings, type TradeLog, type AiLog, type UserBalance,
-  type InsertPlatform, type InsertUserApiKey, type InsertBotSettings, type InsertTradeLog, type InsertUserBalance
+  platforms, userApiKeys, botSettings, tradeLogs, aiLogs, userBalances, aiModels,
+  type Platform, type UserApiKey, type BotSettings, type TradeLog, type AiLog, type UserBalance, type AiModel,
+  type InsertPlatform, type InsertUserApiKey, type InsertBotSettings, type InsertTradeLog, type InsertUserBalance, type InsertAiModel
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -21,6 +21,11 @@ export interface IStorage {
   createUserApiKey(key: InsertUserApiKey): Promise<UserApiKey>;
   deleteUserApiKey(id: number, userId: string): Promise<void>;
 
+  // AI Models
+  getAiModels(userId: string): Promise<AiModel[]>;
+  createAiModel(model: InsertAiModel): Promise<AiModel>;
+  deleteAiModel(id: number, userId: string): Promise<void>;
+
   // Logs
   getTradeLogs(userId: string): Promise<TradeLog[]>;
   createTradeLog(log: InsertTradeLog): Promise<TradeLog>;
@@ -32,6 +37,19 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // ... existing methods ...
+  async getAiModels(userId: string): Promise<AiModel[]> {
+    return await db.select().from(aiModels).where(eq(aiModels.userId, userId));
+  }
+
+  async createAiModel(model: InsertAiModel): Promise<AiModel> {
+    const [newModel] = await db.insert(aiModels).values(model).returning();
+    return newModel;
+  }
+
+  async deleteAiModel(id: number, userId: string): Promise<void> {
+    await db.delete(aiModels).where(and(eq(aiModels.id, id), eq(aiModels.userId, userId)));
+  }
   // ... (existing methods remain the same)
   async getPlatforms(): Promise<Platform[]> {
     return await db.select().from(platforms);

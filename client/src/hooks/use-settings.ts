@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, type InsertBotSettings, type InsertUserApiKey } from "@shared/routes";
+import { api } from "@shared/routes";
+import { type InsertBotSettings, type InsertUserApiKey } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
 export function useBotSettings() {
@@ -112,6 +113,64 @@ export function useDeleteApiKey() {
       toast({
         title: "تم الحذف",
         description: "تم إزالة مفتاح API",
+      });
+    },
+  });
+}
+
+export function useAiModels() {
+  return useQuery({
+    queryKey: ["/api/ai-models"],
+    queryFn: async () => {
+      const res = await fetch("/api/ai-models", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch AI models");
+      return await res.json();
+    },
+  });
+}
+
+export function useCreateAiModel() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch("/api/ai-models", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to add AI model");
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/ai-models"] });
+      toast({
+        title: "تمت الإضافة",
+        description: "تمت إضافة نموذج الذكاء الاصطناعي بنجاح",
+      });
+    },
+  });
+}
+
+export function useDeleteAiModel() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/ai-models/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to delete AI model");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/ai-models"] });
+      toast({
+        title: "تم الحذف",
+        description: "تم إزالة نموذج الذكاء الاصطناعي",
       });
     },
   });

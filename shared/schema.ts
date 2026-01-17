@@ -78,6 +78,18 @@ export const userBalances = pgTable("user_balances", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// === AI Models ===
+export const aiModels = pgTable("ai_models", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  name: text("name").notNull(), // GPT-4, Claude-3, etc.
+  provider: text("provider").notNull(), // OpenAI, Anthropic, etc.
+  baseUrl: text("base_url").notNull(),
+  apiKey: text("api_key").notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // === Zod Schemas ===
 export const insertPlatformSchema = createInsertSchema(platforms);
 export const insertUserApiKeySchema = createInsertSchema(userApiKeys).omit({ id: true, createdAt: true });
@@ -85,6 +97,7 @@ export const insertBotSettingsSchema = createInsertSchema(botSettings).omit({ id
 export const insertTradeLogSchema = createInsertSchema(tradeLogs).omit({ id: true, executedAt: true });
 export const insertAiLogSchema = createInsertSchema(aiLogs).omit({ id: true, createdAt: true });
 export const insertUserBalanceSchema = createInsertSchema(userBalances).omit({ id: true, updatedAt: true });
+export const insertAiModelSchema = createInsertSchema(aiModels).omit({ id: true, createdAt: true });
 
 // === Types ===
 export type Platform = typeof platforms.$inferSelect;
@@ -93,12 +106,14 @@ export type BotSettings = typeof botSettings.$inferSelect;
 export type TradeLog = typeof tradeLogs.$inferSelect;
 export type AiLog = typeof aiLogs.$inferSelect;
 export type UserBalance = typeof userBalances.$inferSelect;
+export type AiModel = typeof aiModels.$inferSelect;
 
 export type InsertPlatform = z.infer<typeof insertPlatformSchema>;
 export type InsertUserApiKey = z.infer<typeof insertUserApiKeySchema>;
 export type InsertBotSettings = z.infer<typeof insertBotSettingsSchema>;
 export type InsertTradeLog = z.infer<typeof insertTradeLogSchema>;
 export type InsertUserBalance = z.infer<typeof insertUserBalanceSchema>;
+export type InsertAiModel = z.infer<typeof insertAiModelSchema>;
 
 // Export auth models too so they are available
 export * from "./models/auth";

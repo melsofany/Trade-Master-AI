@@ -1,7 +1,16 @@
 import React, { useState } from "react";
-import { useBotSettings, useUpdateBotSettings, useApiKeys, useCreateApiKey, useDeleteApiKey } from "@/hooks/use-settings";
+import { 
+  useBotSettings, 
+  useUpdateBotSettings, 
+  useApiKeys, 
+  useCreateApiKey, 
+  useDeleteApiKey, 
+  useAiModels, 
+  useCreateAiModel, 
+  useDeleteAiModel 
+} from "@/hooks/use-settings";
 import { usePlatforms } from "@/hooks/use-platforms";
-import { Trash2, Plus, Key, Save, Server, Shield } from "lucide-react";
+import { Trash2, Plus, Key, Save, Server, Shield, Cpu } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "framer-motion";
 
@@ -10,11 +19,16 @@ export default function Settings() {
   const { mutate: updateSettings, isPending: isUpdating } = useUpdateBotSettings();
   const { data: keys } = useApiKeys();
   const { data: platforms } = usePlatforms();
+  const { data: aiModels } = useAiModels();
   const { mutate: deleteKey } = useDeleteApiKey();
   const { mutate: createKey, isPending: isCreatingKey } = useCreateApiKey();
+  const { mutate: createAiModel, isPending: isCreatingAiModel } = useCreateAiModel();
+  const { mutate: deleteAiModel } = useDeleteAiModel();
 
   const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [newKeyForm, setNewKeyForm] = useState({ platformId: "", apiKey: "", apiSecret: "", label: "" });
+  const [newAiForm, setNewAiForm] = useState({ name: "", provider: "", baseUrl: "", apiKey: "" });
   const [formData, setFormData] = useState<any>({});
 
   React.useEffect(() => {
@@ -199,12 +213,64 @@ export default function Settings() {
               </button>
             </div>
           ))}
+// ... around line 219 ...
           {keys?.length === 0 && (
             <p className="text-center text-muted-foreground py-8">لا توجد مفاتيح API مضافة حالياً.</p>
           )}
         </div>
       </motion.div>
 
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+        className="glass-panel p-6 rounded-2xl"
+      >
+        <div className="flex items-center justify-between mb-6 border-b border-border pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500">
+              <Cpu className="w-5 h-5" />
+            </div>
+            <h3 className="text-lg font-bold">نماذج الذكاء الاصطناعي (AI Models)</h3>
+          </div>
+          <button 
+            onClick={() => setIsAiModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 rounded-lg text-sm font-medium transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            إضافة نموذج جديد
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          {aiModels?.map((model: any) => (
+            <div key={model.id} className="flex items-center justify-between p-4 rounded-xl bg-background/50 border border-border hover:border-primary/30 transition-colors">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
+                  <Cpu className="w-5 h-5 text-muted-foreground" />
+                </div>
+                <div>
+                  <h4 className="font-bold">{model.name}</h4>
+                  <p className="text-xs text-muted-foreground font-mono mt-1">
+                    {model.provider} • {model.baseUrl}
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => deleteAiModel(model.id)}
+                className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+          {aiModels?.length === 0 && (
+            <p className="text-center text-muted-foreground py-8">لا توجد نماذج ذكاء اصطناعي مضافة حالياً.</p>
+          )}
+        </div>
+      </motion.div>
+
+// ... around line 208 ...
       <Dialog.Root open={isKeyModalOpen} onOpenChange={setIsKeyModalOpen}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
@@ -256,6 +322,40 @@ export default function Settings() {
               <div className="flex justify-end gap-3 pt-4">
                 <button type="button" onClick={() => setIsKeyModalOpen(false)} className="px-4 py-2 text-sm font-medium hover:bg-secondary/50 rounded-lg transition-colors">إلغاء</button>
                 <button type="submit" disabled={isCreatingKey} className="px-6 py-2 bg-primary text-primary-foreground text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50">{isCreatingKey ? "جاري الإضافة..." : "حفظ المفتاح"}</button>
+              </div>
+            </form>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
+      <Dialog.Root open={isAiModalOpen} onOpenChange={setIsAiModalOpen}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
+          <Dialog.Content className="fixed left-[50%] top-[50%] max-h-[85vh] w-[90vw] max-w-[500px] translate-x-[-50%] translate-y-[-50%] rounded-2xl bg-card border border-border p-6 shadow-2xl focus:outline-none" dir="rtl">
+            <Dialog.Title className="text-lg font-bold mb-4 font-display">إضافة نموذج ذكاء اصطناعي جديد</Dialog.Title>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              createAiModel(newAiForm, { onSuccess: () => { setIsAiModalOpen(false); setNewAiForm({ name: "", provider: "", baseUrl: "", apiKey: "" }); } });
+            }} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">اسم النموذج</label>
+                <input required className="w-full p-3 rounded-xl bg-background border border-border outline-none" placeholder="GPT-4o, Claude-3" value={newAiForm.name} onChange={(e) => setNewAiForm({...newAiForm, name: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">المزود (Provider)</label>
+                <input required className="w-full p-3 rounded-xl bg-background border border-border outline-none" placeholder="OpenAI, Anthropic" value={newAiForm.provider} onChange={(e) => setNewAiForm({...newAiForm, provider: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Base URL</label>
+                <input required className="w-full p-3 rounded-xl bg-background border border-border outline-none font-mono text-sm" placeholder="https://api.openai.com/v1" value={newAiForm.baseUrl} onChange={(e) => setNewAiForm({...newAiForm, baseUrl: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">API Key</label>
+                <input required type="password" className="w-full p-3 rounded-xl bg-background border border-border outline-none font-mono text-sm" value={newAiForm.apiKey} onChange={(e) => setNewAiForm({...newAiForm, apiKey: e.target.value})} />
+              </div>
+              <div className="flex justify-end gap-3 pt-4">
+                <button type="button" onClick={() => setIsAiModalOpen(false)} className="px-4 py-2 text-sm font-medium hover:bg-secondary/50 rounded-lg">إلغاء</button>
+                <button type="submit" disabled={isCreatingAiModel} className="px-6 py-2 bg-primary text-primary-foreground text-sm font-bold rounded-lg hover:bg-primary/90 disabled:opacity-50">{isCreatingAiModel ? "جاري الإضافة..." : "حفظ النموذج"}</button>
               </div>
             </form>
           </Dialog.Content>
