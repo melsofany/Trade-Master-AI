@@ -52,9 +52,6 @@ function App() {
                   <SidebarTrigger data-testid="button-sidebar-toggle" className="h-9 w-9" />
                   <h1 className="text-lg font-semibold text-primary">نظرة عامة على النظام</h1>
                 </div>
-                <div className="flex items-center gap-4">
-                  {/* Space for header actions */}
-                </div>
               </header>
               <main className="flex-1 overflow-auto">
                 <Router />
