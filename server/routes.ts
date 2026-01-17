@@ -23,12 +23,11 @@ export async function registerRoutes(
     res.json(platforms);
   });
 
-  // Settings (Protected)
-  app.get(api.settings.get.path, isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+  // Settings (Public for bypass)
+  app.get(api.settings.get.path, async (req: any, res) => {
+    const userId = req.user?.claims?.sub || "default_user";
     const settings = await storage.getBotSettings(userId);
     if (!settings) {
-      // Return default if not found
       return res.json({
         userId,
         isActive: false,
@@ -41,15 +40,14 @@ export async function registerRoutes(
     res.json(settings);
   });
 
-  app.post(api.settings.update.path, isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+  app.post(api.settings.update.path, async (req: any, res) => {
+    const userId = req.user?.claims?.sub || "default_user";
     try {
       const input = api.settings.update.input.parse(req.body);
-      // Ensure userId matches auth
       const settings = await storage.upsertBotSettings({
         ...input,
         userId,
-        riskLevel: input.riskLevel || "medium", // Provide default if missing
+        riskLevel: input.riskLevel || "medium",
       } as any);
       res.json(settings);
     } catch (err) {
@@ -60,12 +58,11 @@ export async function registerRoutes(
     }
   });
 
-  // Keys (Protected)
-  app.get(api.keys.list.path, isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+  // Keys (Public for bypass)
+  app.get(api.keys.list.path, async (req: any, res) => {
+    const userId = req.user?.claims?.sub || "default_user";
     const keys = await storage.getUserApiKeys(userId);
     
-    // Join with platform names
     const platforms = await storage.getPlatforms();
     const result = keys.map(k => ({
       id: k.id,
@@ -78,14 +75,11 @@ export async function registerRoutes(
     res.json(result);
   });
 
-  app.post(api.keys.create.path, isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+  app.post(api.keys.create.path, async (req: any, res) => {
+    const userId = req.user?.claims?.sub || "default_user";
     try {
       const input = api.keys.create.input.parse(req.body);
-      if (input.userId !== userId) { // Security check
-         return res.status(403).json({ message: "Invalid User ID" });
-      }
-      const key = await storage.createUserApiKey(input);
+      const key = await storage.createUserApiKey({ ...input, userId });
       res.status(201).json({ id: key.id });
     } catch (err) {
        if (err instanceof z.ZodError) {
@@ -95,23 +89,23 @@ export async function registerRoutes(
     }
   });
 
-  app.delete(api.keys.delete.path, isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+  app.delete(api.keys.delete.path, async (req: any, res) => {
+    const userId = req.user?.claims?.sub || "default_user";
     const id = parseInt(req.params.id);
     await storage.deleteUserApiKey(id, userId);
     res.status(204).send();
   });
 
-  // Logs (Protected)
-  app.get(api.logs.list.path, isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+  // Logs (Public for bypass)
+  app.get(api.logs.list.path, async (req: any, res) => {
+    const userId = req.user?.claims?.sub || "default_user";
     const logs = await storage.getTradeLogs(userId);
     res.json(logs);
   });
 
-  // Dashboard Stats (Protected)
-  app.get(api.dashboard.stats.path, isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+  // Dashboard Stats (Public for bypass)
+  app.get(api.dashboard.stats.path, async (req: any, res) => {
+    const userId = req.user?.claims?.sub || "default_user";
     const stats = await storage.getDashboardStats(userId);
     const settings = await storage.getBotSettings(userId);
     
