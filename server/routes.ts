@@ -62,9 +62,13 @@ export async function registerRoutes(
     }
   });
 
-  // Middleware to protect routes (disabled for bypass)
-  const requireAuth = (_req: any, _res: any, next: any) => {
-    next();
+  // Middleware to protect routes
+  const requireAuth = (req: any, res: any, next: any) => {
+    if ((req.session as any).isAuthenticated || req.isAuthenticated()) {
+      next();
+    } else {
+      res.status(401).json({ message: "يرجى تسجيل الدخول أولاً" });
+    }
   };
 
   // === API Routes ===
