@@ -15,6 +15,43 @@ export async function registerRoutes(
   registerAuthRoutes(app);
   registerChatRoutes(app);
 
+  // === Authentication Routes ===
+  app.post("/api/login", (req, res) => {
+    const { username, password } = req.body;
+    const adminUser = process.env.ADMIN_USERNAME;
+    const adminPass = process.env.ADMIN_PASSWORD;
+
+    if (username === adminUser && password === adminPass) {
+      (req.session as any).isAuthenticated = true;
+      res.json({ success: true });
+    } else {
+      res.status(401).json({ message: "اسم المستخدم أو كلمة المرور غير صحيحة" });
+    }
+  });
+
+  app.post("/api/logout", (req, res) => {
+    req.session.destroy(() => {
+      res.json({ success: true });
+    });
+  });
+
+  app.get("/api/user", (req, res) => {
+    if ((req.session as any).isAuthenticated) {
+      res.json({ username: process.env.ADMIN_USERNAME });
+    } else {
+      res.status(401).json({ message: "غير مصرح" });
+    }
+  });
+
+  // Middleware to protect routes
+  const requireAuth = (req: any, res: any, next: any) => {
+    if (req.session.isAuthenticated) {
+      next();
+    } else {
+      res.status(401).json({ message: "يرجى تسجيل الدخول أولاً" });
+    }
+  };
+
   // === API Routes ===
 
   // Platforms (Public)
