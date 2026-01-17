@@ -47,8 +47,13 @@ function App() {
           <div className="flex h-screen w-full">
             <AppSidebar side="right" />
             <div className="flex flex-col flex-1 overflow-hidden">
-              <header className="flex h-14 items-center gap-4 border-b bg-background px-4">
-                <SidebarTrigger data-testid="button-sidebar-toggle" />
+              <header className="flex h-14 items-center justify-between border-b bg-background px-4">
+                <div className="flex items-center gap-2">
+                  <SidebarTrigger data-testid="button-sidebar-toggle" className="h-9 w-9" />
+                </div>
+                <div className="flex items-center gap-4">
+                  {/* Space for future header items */}
+                </div>
               </header>
               <main className="flex-1 overflow-auto">
                 <Router />
