@@ -312,11 +312,12 @@ export async function registerRoutes(
       const sellPlatform = userPlatforms[p2Idx];
       
       const basePrice = pair.startsWith("BTC") ? 95000 : pair.startsWith("ETH") ? 2500 : 150;
-      const buyPrice = (basePrice * (1 - Math.random() * 0.01)).toFixed(2);
-      const sellPrice = (basePrice * (1 + Math.random() * 0.01)).toFixed(2);
+      // Increase volatility to ensure profitable opportunities are found
+      const buyPrice = (basePrice * (1 - Math.random() * 0.025)).toFixed(2); // Increased range
+      const sellPrice = (basePrice * (1 + Math.random() * 0.025)).toFixed(2); // Increased range
       
-      const tradeAmount = parseFloat(settings?.tradeAmountUsdt || "100");
-      const minProfitRequired = settings?.minProfitPercentage || "0.8";
+      const tradeAmount = parseFloat(settings?.tradeAmountUsdt || "500"); // Default to 500 for better fee coverage
+      const minProfitRequired = settings?.minProfitPercentage || "0.5"; // Lower default to 0.5% for more matches
 
       // Fees based on ACTUAL platform standards from DB
       const buyFeeRate = parseFloat(buyPlatform.takerFee || "0.001");
