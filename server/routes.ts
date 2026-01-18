@@ -331,12 +331,15 @@ export async function registerRoutes(
     }));
 
     // If user has keys, use them. Otherwise, use top major platforms for "Public Discovery Mode"
-    const majorPlatforms = ["Binance", "Kraken", "KuCoin", "Bybit", "OKX"];
+    const majorPlatforms = ["Binance", "Kraken", "KuCoin", "Bybit", "OKX", "Gate.io", "MEXC", "HTX", "Bitget"];
     const platformsToQuery = userKeys.length >= 2 
       ? platforms.filter(p => userKeysWithPlatform.some(k => k.platformId === p.id))
       : platforms.filter(p => majorPlatforms.includes(p.name));
 
-    const pairs = ["BTC/USDT", "ETH/USDT", "SOL/USDT"];
+    const pairs = [
+      "BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT", "XRP/USDT", 
+      "ADA/USDT", "DOT/USDT", "LINK/USDT", "MATIC/USDT", "AVAX/USDT"
+    ];
     const results = [];
 
     try {
