@@ -6,6 +6,21 @@ import { registerChatRoutes } from "./replit_integrations/chat";
 import { api } from "@shared/routes";
 import { z } from "zod";
 
+import TelegramBot from "node-telegram-bot-api";
+
+// Helper to send telegram message
+async function sendTelegramNotification(userId: string, message: string) {
+  const settings = await storage.getBotSettings(userId);
+  if (settings?.telegramBotToken && settings?.telegramUserId) {
+    try {
+      const bot = new TelegramBot(settings.telegramBotToken);
+      await bot.sendMessage(settings.telegramUserId, message, { parse_mode: 'HTML' });
+    } catch (err) {
+      console.error("Telegram notification error:", err);
+    }
+  }
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -234,6 +249,18 @@ export async function registerRoutes(
       });
 
       res.status(201).json(log);
+
+      // Send Telegram Notification
+      const telegramMsg = `
+🚀 <b>تم تنفيذ صفقة جديدة</b>
+<b>الزوج:</b> ${pair}
+<b>شراء:</b> ${buyPlatform}
+<b>بيع:</b> ${sellPlatform}
+<b>السعر:</b> ${sellPrice}
+<b>الربح المتوقع:</b> ${profitUsdt}$ (${profitPercentage}%)
+🛡️ <i>حماية السعر مفعلة</i>
+      `;
+      sendTelegramNotification(userId, telegramMsg.trim());
     } catch (err) {
       console.error("Trade execution error:", err);
       res.status(500).json({ message: "فشل تنفيذ الصفقة" });
