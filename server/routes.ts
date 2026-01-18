@@ -44,15 +44,33 @@ function calculateVWAP(orders: [number, number][], targetAmountUsdt: number, pri
 // Global cache for currencies status
 let currenciesCache: Record<string, any> = {};
 
-async function syncCurrencies(exchange: any, platformName: string) {
+// Helper to sync fees and currencies
+async function syncPlatformMetadata(exchange: any, platform: any) {
   try {
-    const currencies = await exchange.fetchCurrencies();
-    currenciesCache[platformName] = currencies;
+    const platformName = platform.name;
     
-    // Update platform status in DB if needed (e.g., if many currencies are disabled)
-    // For now, we'll use this cache in our opportunity scanner
+    // Fetch transaction fees if supported
+    if (exchange.has['fetchTransactionFees']) {
+      const fees = await exchange.fetchTransactionFees();
+      const usdtFee = fees['USDT']?.withdraw || platform.withdrawalFeeUsdt;
+      if (usdtFee !== platform.withdrawalFeeUsdt) {
+        await storage.updatePlatform(platform.id, { withdrawalFeeUsdt: usdtFee.toString() });
+      }
+    }
+
+    // Fetch currency status
+    if (exchange.has['fetchCurrencies']) {
+      const currencies = await exchange.fetchCurrencies();
+      currenciesCache[platformName] = currencies;
+      const usdtStatus = currencies['USDT'];
+      if (usdtStatus && !usdtStatus.active) {
+        await storage.updatePlatform(platform.id, { walletStatus: 'maintenance' });
+      } else if (usdtStatus && usdtStatus.active) {
+        await storage.updatePlatform(platform.id, { walletStatus: 'ok' });
+      }
+    }
   } catch (e) {
-    console.error(`Failed to sync currencies for ${platformName}:`, e);
+    console.error(`Metadata sync failed for ${platform.name}:`, e);
   }
 }
 
@@ -450,9 +468,9 @@ export async function registerRoutes(
                 const vwapBid = calculateVWAP(bids, tradeAmount, 'bid');
                 const vwapAsk = calculateVWAP(asks, tradeAmount, 'ask');
                 
-                // Periodically sync currencies (simplified trigger)
-                if (!currenciesCache[p.name] || Math.random() < 0.1) {
-                  syncCurrencies(exchange, p.name);
+                // Periodically sync metadata (fees, status)
+                if (!currenciesCache[p.name] || Math.random() < 0.05) {
+                  syncPlatformMetadata(exchange, p);
                 }
 
                 const currencyStatus = currenciesCache[p.name]?.['USDT'] || { active: true };
@@ -509,46 +527,51 @@ export async function registerRoutes(
               const tradeAmount = parseFloat(settings?.tradeAmountUsdt || "500");
               const minProfitRequired = settings?.minProfitPercentage || "0.5";
               
-              // Volatility check (Simplified AI simulation)
-              const priceSpread = (buyPlatformData.ask - buyPlatformData.bid) / buyPlatformData.bid;
-              const isVolatile = priceSpread > 0.002; // More than 0.2% spread suggests volatility
+              // VWAP and Liquidity Analysis
+              const buyVWAP = buyPlatformData.ask;
+              const sellVWAP = sellPlatformData.bid;
+              
+              // Volatility check based on order book spread
+              const buySpread = (buyPlatformData.ask - buyPlatformData.bid) / buyPlatformData.bid;
+              const sellSpread = (sellPlatformData.ask - sellPlatformData.bid) / sellPlatformData.bid;
+              const isVolatile = buySpread > 0.003 || sellSpread > 0.003; 
               
               const buyFeeRate = parseFloat(buyPlatform.takerFee || "0.001");
               const sellFeeRate = parseFloat(sellPlatform.takerFee || "0.001");
               const networkFeeUsdt = parseFloat(sellPlatform.withdrawalFeeUsdt || "1.0");
               
               const buyFee = tradeAmount * buyFeeRate;
-              const sellFee = (sellPrice * (tradeAmount / buyPrice)) * sellFeeRate;
+              const sellFee = (sellVWAP * (tradeAmount / buyVWAP)) * sellFeeRate;
               const totalFeesUsdt = buyFee + sellFee + networkFeeUsdt;
 
-              const grossProfitUsdt = (sellPrice - buyPrice) * (tradeAmount / buyPrice);
+              const grossProfitUsdt = (sellVWAP - buyVWAP) * (tradeAmount / buyVWAP);
               const netProfitUsdt = grossProfitUsdt - totalFeesUsdt;
               
-              // Predictive Analysis (AI Simulation)
-              // Risk score increases with volatility and extreme profit
+              // Advanced AI Risk Scoring
               let aiRiskScore = 15;
-              if (isVolatile) aiRiskScore += 30;
-              if (netProfitUsdt > (tradeAmount * 0.05)) aiRiskScore += 40;
+              if (isVolatile) aiRiskScore += 25;
+              if (netProfitUsdt > (tradeAmount * 0.08)) aiRiskScore += 50; // High probability of pricing error
+              if (buyPlatformData.walletStatus !== "ok" || sellPlatformData.walletStatus !== "ok") aiRiskScore += 40;
 
-              const aiRecommendation = aiRiskScore > 60 
-                ? "تحذير: مخاطرة عالية بسبب تذبذب السعر أو ربح غير منطقي" 
-                : aiRiskScore > 30 
-                  ? "تنبيه: تذبذب متوسط، يفضل الحذر" 
-                  : "فرصة مستقرة تقنياً";
+              const aiRecommendation = aiRiskScore > 70 
+                ? "خطر شديد: احتمالية خطأ في البيانات أو تلاعب" 
+                : aiRiskScore > 40 
+                  ? "تحذير: تقلبات عالية في السوق، يفضل الانتظار" 
+                  : "فرصة آمنة للتنفيذ";
 
               // Only include profitable opportunities
               if (netProfitUsdt < 0) continue; 
 
               const netSpread = (netProfitUsdt / tradeAmount) * 100;
-              const spread = ((sellPrice - buyPrice) / buyPrice) * 100;
+              const spread = ((sellVWAP - buyVWAP) / buyVWAP) * 100;
 
               results.push({
                 id: results.length + 1,
                 pair,
                 buy: buyPlatformName,
                 sell: sellPlatformName,
-                buyPrice: buyPrice.toFixed(4),
-                sellPrice: sellPrice.toFixed(4),
+                buyPrice: buyVWAP.toFixed(4),
+                sellPrice: sellVWAP.toFixed(4),
                 spread: spread.toFixed(2),
                 fees: ((totalFeesUsdt / tradeAmount) * 100).toFixed(2),
                 netProfit: netSpread.toFixed(2),
