@@ -62,7 +62,7 @@ export default function Login() {
                   <FormItem>
                     <FormLabel>اسم المستخدم</FormLabel>
                     <FormControl>
-                      <Input placeholder="admin" {...field} data-testid="input-username" />
+                      <Input placeholder="اسم المستخدم" {...field} data-testid="input-username" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

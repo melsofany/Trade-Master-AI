@@ -30,7 +30,7 @@ export async function registerRoutes(
         }
 
         (req.session as any).isAuthenticated = true;
-        (req.session as any).user = { username: adminUser, firstName: "Admin", lastName: "" };
+        (req.session as any).user = { username, firstName: "المشرف", lastName: "" };
         
         // Manual session assignment for bypass
         req.session.save((err) => {
