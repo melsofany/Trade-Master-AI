@@ -9,6 +9,9 @@ import { z } from "zod";
 import TelegramBot from "node-telegram-bot-api";
 import ccxt from "ccxt";
 
+// Cache for exchange instances
+const exchangeInstances: Record<string, any> = {};
+
 // Helper to calculate VWAP for a target amount
 function calculateVWAP(orders: [number, number][], targetAmountUsdt: number, priceType: 'bid' | 'ask'): number {
   let remainingUsdt = targetAmountUsdt;
@@ -458,8 +461,8 @@ export async function registerRoutes(
                 prices[p.name] = {
                   bid: vwapBid,
                   ask: vwapAsk,
-                  bidVolume: bids.reduce((acc, curr) => acc + curr[1], 0),
-                  askVolume: asks.reduce((acc, curr) => acc + curr[1], 0),
+                  bidVolume: bids.reduce((acc: number, curr: [number, number]) => acc + curr[1], 0),
+                  askVolume: asks.reduce((acc: number, curr: [number, number]) => acc + curr[1], 0),
                   walletStatus: walletStatus,
                   networks: p.supportedNetworks || []
                 };
