@@ -408,6 +408,10 @@ export async function registerRoutes(
 
               const grossProfitUsdt = (sellPrice - buyPrice) * (tradeAmount / buyPrice);
               const netProfitUsdt = grossProfitUsdt - totalFeesUsdt;
+              
+              // Only include profitable opportunities or those very close to break-even for analyzing
+              if (netProfitUsdt < -5.0) continue; 
+
               const netSpread = (netProfitUsdt / tradeAmount) * 100;
               const spread = ((sellPrice - buyPrice) / buyPrice) * 100;
 

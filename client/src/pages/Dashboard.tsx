@@ -204,25 +204,27 @@ export default function Dashboard() {
             تحليل الذكاء الاصطناعي
           </h3>
           <div className="flex-1 space-y-4 overflow-y-auto pr-2 relative z-10 custom-scrollbar">
-            {opportunities && opportunities.length > 0 ? (
+            {opportunities && opportunities.filter((o: any) => parseFloat(o.netProfit) > -1.0).length > 0 ? (
               <>
                 <AILogMessage 
                   time={new Date().toLocaleTimeString('ar-SA')} 
-                  text={`تحليل السوق المباشر: تم رصد ${opportunities.length} فرصة ربح محتملة.`} 
+                  text={`تحليل السوق المباشر: تم رصد ${opportunities.filter((o: any) => parseFloat(o.netProfit) > -1.0).length} فرصة واعدة.`} 
                   sentiment="positive" 
                 />
-                {opportunities.map((opp: any, i: number) => (
-                  <AILogMessage 
-                    key={i}
-                    time={new Date().toLocaleTimeString('ar-SA')} 
-                    text={`رصد اختلاف سعري لزوج ${opp.pair} بين ${opp.buy} و ${opp.sell}. الربح الصافي المقدر ${opp.netProfit}%.`} 
-                    sentiment={parseFloat(opp.netProfit) > 1.0 ? "positive" : "neutral"} 
-                  />
-                ))}
+                {opportunities
+                  .filter((o: any) => parseFloat(o.netProfit) > -1.0)
+                  .map((opp: any, i: number) => (
+                    <AILogMessage 
+                      key={i}
+                      time={new Date().toLocaleTimeString('ar-SA')} 
+                      text={`رصد اختلاف سعري لزوج ${opp.pair} بين ${opp.buy} و ${opp.sell}. الربح الصافي المقدر ${opp.netProfit}%.`} 
+                      sentiment={parseFloat(opp.netProfit) > 0.5 ? "positive" : "neutral"} 
+                    />
+                  ))}
               </>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">
-                جاري جلب بيانات السوق الحية وتحليل الفرص...
+                جاري تحليل أعمق للسوق... لا توجد فرص ذات ربحية جيدة حالياً.
               </p>
             )}
           </div>
@@ -252,7 +254,7 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {opportunities?.map((opp) => (
+              {opportunities?.filter((o: any) => parseFloat(o.netProfit) > -0.5).map((opp) => (
                 <tr key={opp.id} className="hover:bg-secondary/20 transition-colors">
                   <td className="px-6 py-4 font-bold ltr font-mono">{opp.pair}</td>
                   <td className="px-6 py-4">
@@ -298,9 +300,9 @@ export default function Dashboard() {
                   </td>
                 </tr>
               ))}
-              {opportunities?.length === 0 && (
+              {opportunities?.filter((o: any) => parseFloat(o.netProfit) > -0.5).length === 0 && (
                 <tr>
-                  <td colSpan={6} className="text-center py-8 text-muted-foreground">لا توجد فرص متاحة حالياً. جاري البحث...</td>
+                  <td colSpan={8} className="text-center py-8 text-muted-foreground">لا توجد فرص متاحة حالياً. جاري البحث...</td>
                 </tr>
               )}
             </tbody>
