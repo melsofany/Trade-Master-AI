@@ -208,6 +208,7 @@ export async function registerRoutes(
   app.get("/api/opportunities", async (req: any, res) => {
     const userId = req.user?.claims?.sub || "default_user";
     const userKeys = await storage.getUserApiKeys(userId);
+    const settings = await storage.getBotSettings(userId);
     
     if (userKeys.length < 1) {
       return res.json([]); // No API keys, no actual opportunities
