@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { useDashboardStats } from "@/hooks/use-dashboard";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -40,10 +40,20 @@ const opportunities = [
 export default function Dashboard() {
   const { toast } = useToast();
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
-  const { data: opportunities, isLoading: oppsLoading } = useQuery<any[]>({
+  const { data: opportunities, isLoading: oppsLoading, error: oppsError } = useQuery<any[]>({
     queryKey: ["/api/opportunities"],
     refetchInterval: 5000, // Refresh every 5 seconds for live feel
   });
+
+  useEffect(() => {
+    if (oppsError) {
+      toast({
+        title: "خطأ في الاتصال",
+        description: "فشل جلب بيانات بعض المنصات. يرجى التحقق من مفاتيح API الخاصة بك.",
+        variant: "destructive",
+      });
+    }
+  }, [oppsError, toast]);
 
   const executeTradeMutation = useMutation({
     mutationFn: async (tradeData: any) => {
