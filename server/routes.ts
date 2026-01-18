@@ -9,8 +9,49 @@ import { z } from "zod";
 import TelegramBot from "node-telegram-bot-api";
 import ccxt from "ccxt";
 
-// Cache for exchange instances
-const exchangeInstances: Record<string, any> = {};
+// Helper to calculate VWAP for a target amount
+function calculateVWAP(orders: [number, number][], targetAmountUsdt: number, priceType: 'bid' | 'ask'): number {
+  let remainingUsdt = targetAmountUsdt;
+  let totalVolume = 0;
+  let totalCost = 0;
+
+  for (const [price, volume] of orders) {
+    const orderUsdt = price * volume;
+    const filledUsdt = Math.min(remainingUsdt, orderUsdt);
+    const filledVolume = filledUsdt / price;
+
+    totalVolume += filledVolume;
+    totalCost += filledUsdt;
+    remainingUsdt -= filledUsdt;
+
+    if (remainingUsdt <= 0) break;
+  }
+
+  // If we couldn't fill the whole amount, use the last price for the remainder (pessimistic)
+  if (remainingUsdt > 0 && orders.length > 0) {
+    const lastPrice = orders[orders.length - 1][0];
+    const remainingVolume = remainingUsdt / lastPrice;
+    totalVolume += remainingVolume;
+    totalCost += remainingUsdt;
+  }
+
+  return totalVolume > 0 ? totalCost / totalVolume : 0;
+}
+
+// Global cache for currencies status
+let currenciesCache: Record<string, any> = {};
+
+async function syncCurrencies(exchange: any, platformName: string) {
+  try {
+    const currencies = await exchange.fetchCurrencies();
+    currenciesCache[platformName] = currencies;
+    
+    // Update platform status in DB if needed (e.g., if many currencies are disabled)
+    // For now, we'll use this cache in our opportunity scanner
+  } catch (e) {
+    console.error(`Failed to sync currencies for ${platformName}:`, e);
+  }
+}
 
 async function getExchangeInstance(platformName: string, keys: any[]) {
   const slug = platformName.toLowerCase().replace(".", "");
@@ -394,23 +435,32 @@ export async function registerRoutes(
                 return;
               }
 
+              const tradeAmount = parseFloat(settings?.tradeAmountUsdt || "500");
+
               // Use fetchOrderBook for accurate slippage calculation
-              const orderBook = await exchange.fetchOrderBook(pair, 5); // Fetch top 5 levels
+              const orderBook = await exchange.fetchOrderBook(pair, 20); // Fetch top 20 levels for VWAP
               const bids = orderBook.bids || [];
               const asks = orderBook.asks || [];
 
               if (bids.length > 0 && asks.length > 0) {
-                // For simplified logic: Best Bid (Sell price) and Best Ask (Buy price)
-                // In full implementation, we'd traverse the book for the specific trade amount
-                const bestBid = bids[0][0]; // Price to sell at
-                const bestAsk = asks[0][0]; // Price to buy at
+                // Calculate VWAP based on trade amount
+                const vwapBid = calculateVWAP(bids, tradeAmount, 'bid');
+                const vwapAsk = calculateVWAP(asks, tradeAmount, 'ask');
+                
+                // Periodically sync currencies (simplified trigger)
+                if (!currenciesCache[p.name] || Math.random() < 0.1) {
+                  syncCurrencies(exchange, p.name);
+                }
+
+                const currencyStatus = currenciesCache[p.name]?.['USDT'] || { active: true };
+                const walletStatus = currencyStatus.active ? (p.walletStatus || "ok") : "disabled";
                 
                 prices[p.name] = {
-                  bid: bestBid,
-                  ask: bestAsk,
-                  bidVolume: bids[0][1],
-                  askVolume: asks[0][1],
-                  walletStatus: p.walletStatus || "ok",
+                  bid: vwapBid,
+                  ask: vwapAsk,
+                  bidVolume: bids.reduce((acc, curr) => acc + curr[1], 0),
+                  askVolume: asks.reduce((acc, curr) => acc + curr[1], 0),
+                  walletStatus: walletStatus,
                   networks: p.supportedNetworks || []
                 };
               }
@@ -456,25 +506,32 @@ export async function registerRoutes(
               const tradeAmount = parseFloat(settings?.tradeAmountUsdt || "500");
               const minProfitRequired = settings?.minProfitPercentage || "0.5";
               
-              // Slippage check (Simplified AI simulation)
-              const availableLiquidity = Math.min(buyPlatformData.askVolume * buyPrice, sellPlatformData.bidVolume * sellPrice);
-              const slippageImpact = tradeAmount > availableLiquidity ? 0.005 : 0; // 0.5% slippage if amount > available top-tier liquidity
+              // Volatility check (Simplified AI simulation)
+              const priceSpread = (buyPlatformData.ask - buyPlatformData.bid) / buyPlatformData.bid;
+              const isVolatile = priceSpread > 0.002; // More than 0.2% spread suggests volatility
               
               const buyFeeRate = parseFloat(buyPlatform.takerFee || "0.001");
               const sellFeeRate = parseFloat(sellPlatform.takerFee || "0.001");
               const networkFeeUsdt = parseFloat(sellPlatform.withdrawalFeeUsdt || "1.0");
               
-              const buyFee = tradeAmount * (buyFeeRate + slippageImpact);
-              const sellFee = (sellPrice * (tradeAmount / buyPrice)) * (sellFeeRate + slippageImpact);
+              const buyFee = tradeAmount * buyFeeRate;
+              const sellFee = (sellPrice * (tradeAmount / buyPrice)) * sellFeeRate;
               const totalFeesUsdt = buyFee + sellFee + networkFeeUsdt;
 
               const grossProfitUsdt = (sellPrice - buyPrice) * (tradeAmount / buyPrice);
               const netProfitUsdt = grossProfitUsdt - totalFeesUsdt;
               
               // Predictive Analysis (AI Simulation)
-              // If net spread is high, AI checks if it's likely to persist
-              const aiRiskScore = netProfitUsdt > (tradeAmount * 0.05) ? 80 : 15; // High profit often means high risk/anomaly
-              const aiRecommendation = aiRiskScore > 50 ? "تحذير: ربح غير طبيعي، قد يكون خللاً في المنصة" : "فرصة مستقرة تقنياً";
+              // Risk score increases with volatility and extreme profit
+              let aiRiskScore = 15;
+              if (isVolatile) aiRiskScore += 30;
+              if (netProfitUsdt > (tradeAmount * 0.05)) aiRiskScore += 40;
+
+              const aiRecommendation = aiRiskScore > 60 
+                ? "تحذير: مخاطرة عالية بسبب تذبذب السعر أو ربح غير منطقي" 
+                : aiRiskScore > 30 
+                  ? "تنبيه: تذبذب متوسط، يفضل الحذر" 
+                  : "فرصة مستقرة تقنياً";
 
               // Only include profitable opportunities
               if (netProfitUsdt < 0) continue; 
