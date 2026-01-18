@@ -7,6 +7,34 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 
 import TelegramBot from "node-telegram-bot-api";
+import ccxt from "ccxt";
+
+// Cache for exchange instances
+const exchangeInstances: Record<string, any> = {};
+
+async function getExchangeInstance(platformName: string, keys: any[]) {
+  const key = keys.find(k => {
+    const p = exchangeInstances[platformName];
+    return k.platformName === platformName;
+  });
+  
+  const slug = platformName.toLowerCase().replace(".", "");
+  if (!ccxt.exchanges.includes(slug)) return null;
+
+  if (!exchangeInstances[platformName]) {
+    const userKey = keys.find(k => k.platformName === platformName);
+    if (userKey) {
+      exchangeInstances[platformName] = new (ccxt as any)[slug]({
+        apiKey: userKey.apiKey,
+        secret: userKey.apiSecret,
+        enableRateLimit: true,
+      });
+    } else {
+      exchangeInstances[platformName] = new (ccxt as any)[slug]({ enableRateLimit: true });
+    }
+  }
+  return exchangeInstances[platformName];
+}
 
 // Helper to send telegram message
 async function sendTelegramNotification(userId: string, message: string) {
@@ -288,71 +316,94 @@ export async function registerRoutes(
     const userKeys = await storage.getUserApiKeys(userId);
     const settings = await storage.getBotSettings(userId);
     
-    if (userKeys.length < 1) {
-      return res.json([]); // No API keys, no actual opportunities
+    if (userKeys.length < 2) {
+      return res.json([]); // Need at least 2 platforms for real arbitrage
     }
 
     const platforms = await storage.getPlatforms();
-    const userPlatforms = platforms.filter(p => userKeys.some(k => k.platformId === p.id));
-    
-    if (userPlatforms.length < 2) {
-      // Need at least 2 platforms for arbitrage
-      return res.json([]);
+    const userKeysWithPlatform = userKeys.map(k => ({
+      ...k,
+      platformName: platforms.find(p => p.id === k.platformId)?.name || ""
+    }));
+
+    const connectedPlatforms = platforms.filter(p => userKeysWithPlatform.some(k => k.platformId === p.id));
+    const pairs = ["BTC/USDT", "ETH/USDT", "SOL/USDT"];
+    const results = [];
+
+    try {
+      for (const pair of pairs) {
+        const prices: Record<string, number> = {};
+        
+        // Fetch real prices from connected exchanges
+        await Promise.all(connectedPlatforms.map(async (p) => {
+          try {
+            const exchange = await getExchangeInstance(p.name, userKeysWithPlatform);
+            if (exchange) {
+              const ticker = await exchange.fetchTicker(pair);
+              prices[p.name] = ticker.last;
+            }
+          } catch (e) {
+            console.error(`Error fetching price for ${pair} on ${p.name}:`, e);
+          }
+        }));
+
+        const platformNames = Object.keys(prices);
+        if (platformNames.length < 2) continue;
+
+        // Find best arbitrage opportunity for this pair
+        for (let i = 0; i < platformNames.length; i++) {
+          for (let j = 0; j < platformNames.length; j++) {
+            if (i === j) continue;
+
+            const buyPlatformName = platformNames[i];
+            const sellPlatformName = platformNames[j];
+            const buyPrice = prices[buyPlatformName];
+            const sellPrice = prices[sellPlatformName];
+
+            if (sellPrice > buyPrice) {
+              const buyPlatform = connectedPlatforms.find(p => p.name === buyPlatformName)!;
+              const sellPlatform = connectedPlatforms.find(p => p.name === sellPlatformName)!;
+              
+              const tradeAmount = parseFloat(settings?.tradeAmountUsdt || "500");
+              const minProfitRequired = settings?.minProfitPercentage || "0.5";
+
+              const buyFeeRate = parseFloat(buyPlatform.takerFee || "0.001");
+              const sellFeeRate = parseFloat(sellPlatform.takerFee || "0.001");
+              const networkFeeUsdt = parseFloat(sellPlatform.withdrawalFeeUsdt || "1.0");
+              
+              const buyFee = tradeAmount * buyFeeRate;
+              const sellFee = (sellPrice * (tradeAmount / buyPrice)) * sellFeeRate;
+              const totalFeesUsdt = buyFee + sellFee + networkFeeUsdt;
+
+              const grossProfitUsdt = (sellPrice - buyPrice) * (tradeAmount / buyPrice);
+              const netProfitUsdt = grossProfitUsdt - totalFeesUsdt;
+              const netSpread = (netProfitUsdt / tradeAmount) * 100;
+              const spread = ((sellPrice - buyPrice) / buyPrice) * 100;
+
+              results.push({
+                id: results.length + 1,
+                pair,
+                buy: buyPlatformName,
+                sell: sellPlatformName,
+                buyPrice: buyPrice.toFixed(4),
+                sellPrice: sellPrice.toFixed(4),
+                spread: spread.toFixed(2),
+                fees: ((totalFeesUsdt / tradeAmount) * 100).toFixed(2),
+                netProfit: netSpread.toFixed(2),
+                expectedProfitUsdt: netProfitUsdt.toFixed(2),
+                minProfitRequired,
+                minAmountRequired: (tradeAmount * (parseFloat(minProfitRequired) / Math.max(netSpread, 0.1))).toFixed(2),
+                status: netSpread >= parseFloat(minProfitRequired) ? "available" : "analyzing"
+              });
+            }
+          }
+        }
+      }
+      res.json(results);
+    } catch (err) {
+      console.error("Arbitrage engine error:", err);
+      res.status(500).json({ message: "خطأ في جلب بيانات السوق الحية" });
     }
-
-    const pairs = ["BTC/USDT", "ETH/USDT", "SOL/USDT", "XRP/USDT", "ADA/USDT"];
-    
-    // Simulate live data ONLY between connected platforms
-    const opportunities = pairs.map((pair, index) => {
-      const p1Idx = Math.floor(Math.random() * userPlatforms.length);
-      let p2Idx = Math.floor(Math.random() * userPlatforms.length);
-      while (p1Idx === p2Idx) p2Idx = Math.floor(Math.random() * userPlatforms.length);
-      
-      const buyPlatform = userPlatforms[p1Idx];
-      const sellPlatform = userPlatforms[p2Idx];
-      
-      const basePrice = pair.startsWith("BTC") ? 95000 : pair.startsWith("ETH") ? 2500 : 150;
-      // Increase volatility to ensure profitable opportunities are found
-      const buyPrice = (basePrice * (1 - Math.random() * 0.025)).toFixed(2); // Increased range
-      const sellPrice = (basePrice * (1 + Math.random() * 0.025)).toFixed(2); // Increased range
-      
-      const tradeAmount = parseFloat(settings?.tradeAmountUsdt || "500"); // Default to 500 for better fee coverage
-      const minProfitRequired = settings?.minProfitPercentage || "0.5"; // Lower default to 0.5% for more matches
-
-      // Fees based on ACTUAL platform standards from DB
-      const buyFeeRate = parseFloat(buyPlatform.takerFee || "0.001");
-      const sellFeeRate = parseFloat(sellPlatform.takerFee || "0.001");
-      const networkFeeUsdt = parseFloat(sellPlatform.withdrawalFeeUsdt || "1.0");
-      
-      const buyFee = tradeAmount * buyFeeRate;
-      const sellFee = (parseFloat(sellPrice) * (tradeAmount / parseFloat(buyPrice))) * sellFeeRate;
-      const totalFeesUsdt = buyFee + sellFee + networkFeeUsdt;
-
-      const spread = (((parseFloat(sellPrice) - parseFloat(buyPrice)) / parseFloat(buyPrice)) * 100).toFixed(2);
-      const expectedProfitUsdt = ((parseFloat(sellPrice) - parseFloat(buyPrice)) * (tradeAmount / parseFloat(buyPrice)) - totalFeesUsdt).toFixed(2);
-      const netSpread = ((parseFloat(expectedProfitUsdt) / tradeAmount) * 100).toFixed(2);
-      
-      const isProfitable = parseFloat(netSpread) >= parseFloat(minProfitRequired);
-      const minAmountRequired = (tradeAmount * (parseFloat(minProfitRequired) / Math.max(parseFloat(netSpread), 0.1))).toFixed(2);
-
-      return {
-        id: index + 1,
-        pair,
-        buy: buyPlatform.name,
-        sell: sellPlatform.name,
-        buyPrice,
-        sellPrice,
-        spread,
-        fees: ((totalFeesUsdt / tradeAmount) * 100).toFixed(2),
-        netProfit: netSpread,
-        expectedProfitUsdt,
-        minProfitRequired,
-        minAmountRequired,
-        status: isProfitable ? "available" : "analyzing"
-      };
-    });
-
-    res.json(opportunities);
   });
 
   // Seed Data
