@@ -204,6 +204,40 @@ export async function registerRoutes(
     });
   });
 
+  // Execute Trade
+  app.post("/api/trades/execute", async (req: any, res) => {
+    const userId = req.user?.claims?.sub || "default_user";
+    const { pair, buyPlatform, sellPlatform, amount, buyPrice, sellPrice, profitUsdt, profitPercentage } = req.body;
+
+    try {
+      // In a real app, this would call the exchange APIs via CCXT
+      // Here we simulate success and save to database
+      const platforms = await storage.getPlatforms();
+      const buyP = platforms.find(p => p.name === buyPlatform);
+      const sellP = platforms.find(p => p.name === sellPlatform);
+
+      const log = await storage.createTradeLog({
+        userId,
+        pair,
+        buyPlatformId: buyP?.id,
+        sellPlatformId: sellP?.id,
+        amount: amount.toString(),
+        buyPrice: buyPrice.toString(),
+        sellPrice: sellPrice.toString(),
+        profitUsdt: profitUsdt.toString(),
+        profitPercentage: profitPercentage.toString(),
+        status: "executed",
+        aiRiskScore: 15,
+        aiAnalysisSummary: "تم التنفيذ بنجاح بناءً على طلب المستخدم."
+      });
+
+      res.status(201).json(log);
+    } catch (err) {
+      console.error("Trade execution error:", err);
+      res.status(500).json({ message: "فشل تنفيذ الصفقة" });
+    }
+  });
+
   // Arbitrage Opportunities
   app.get("/api/opportunities", async (req: any, res) => {
     const userId = req.user?.claims?.sub || "default_user";

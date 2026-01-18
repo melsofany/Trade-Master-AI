@@ -1,8 +1,10 @@
 import React from "react";
 import { Layout } from "@/components/Layout";
 import { useDashboardStats } from "@/hooks/use-dashboard";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { formatCurrency } from "@/lib/utils";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { 
   TrendingUp, 
   Activity, 
@@ -36,10 +38,34 @@ const opportunities = [
 ];
 
 export default function Dashboard() {
+  const { toast } = useToast();
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: opportunities, isLoading: oppsLoading } = useQuery<any[]>({
     queryKey: ["/api/opportunities"],
     refetchInterval: 5000, // Refresh every 5 seconds for live feel
+  });
+
+  const executeTradeMutation = useMutation({
+    mutationFn: async (tradeData: any) => {
+      const res = await apiRequest("POST", "/api/trades/execute", tradeData);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/logs"] });
+      toast({
+        title: "تم التنفيذ",
+        description: "تم تنفيذ الصفقة وحفظها في السجلات بنجاح.",
+        variant: "default",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "خطأ",
+        description: "فشل تنفيذ الصفقة. يرجى المحاولة لاحقاً.",
+        variant: "destructive",
+      });
+    }
   });
 
   const isLoading = statsLoading || oppsLoading;
@@ -244,10 +270,20 @@ export default function Dashboard() {
                   </td>
                   <td className="px-6 py-4">
                     <button 
-                      disabled={opp.status !== 'available'}
+                      disabled={opp.status !== 'available' || executeTradeMutation.isPending}
+                      onClick={() => executeTradeMutation.mutate({
+                        pair: opp.pair,
+                        buyPlatform: opp.buy,
+                        sellPlatform: opp.sell,
+                        amount: opp.minAmountRequired,
+                        buyPrice: opp.buyPrice,
+                        sellPrice: opp.sellPrice,
+                        profitUsdt: opp.expectedProfitUsdt,
+                        profitPercentage: opp.netProfit
+                      })}
                       className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-[10px] font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
                     >
-                      تنفيذ
+                      {executeTradeMutation.isPending ? "جاري..." : "تنفيذ"}
                     </button>
                   </td>
                 </tr>
