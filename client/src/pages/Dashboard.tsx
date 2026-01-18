@@ -206,9 +206,10 @@ export default function Dashboard() {
             <thead>
               <tr className="bg-secondary/30 text-muted-foreground">
                 <th className="px-6 py-4 text-right font-medium">الزوج</th>
-                <th className="px-6 py-4 text-right font-medium">منصة الشراء</th>
-                <th className="px-6 py-4 text-right font-medium">منصة البيع</th>
+                <th className="px-6 py-4 text-right font-medium">الشراء (السعر)</th>
+                <th className="px-6 py-4 text-right font-medium">البيع (السعر)</th>
                 <th className="px-6 py-4 text-right font-medium">الفرق (Spread)</th>
+                <th className="px-6 py-4 text-right font-medium">الحد الأدنى للربح</th>
                 <th className="px-6 py-4 text-right font-medium">الحالة</th>
                 <th className="px-6 py-4 text-right font-medium">الإجراء</th>
               </tr>
@@ -217,20 +218,30 @@ export default function Dashboard() {
               {opportunities?.map((opp) => (
                 <tr key={opp.id} className="hover:bg-secondary/20 transition-colors">
                   <td className="px-6 py-4 font-bold ltr font-mono">{opp.pair}</td>
-                  <td className="px-6 py-4">{opp.buy}</td>
-                  <td className="px-6 py-4">{opp.sell}</td>
-                  <td className="px-6 py-4 text-emerald-500 font-bold font-mono" dir="ltr">{opp.spread}%</td>
                   <td className="px-6 py-4">
-                    {opp.status === 'available' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-500">متاح للتنفيذ</span>}
-                    {opp.status === 'analyzing' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-500">جاري التحليل...</span>}
-                    {opp.status === 'risk_high' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-500">مخاطرة عالية</span>}
+                    <div className="flex flex-col">
+                      <span className="font-medium">{opp.buy}</span>
+                      <span className="text-xs text-muted-foreground font-mono" dir="ltr">${opp.buyPrice}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col">
+                      <span className="font-medium">{opp.sell}</span>
+                      <span className="text-xs text-muted-foreground font-mono" dir="ltr">${opp.sellPrice}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-emerald-500 font-bold font-mono" dir="ltr">{opp.spread}%</td>
+                  <td className="px-6 py-4 font-mono text-muted-foreground" dir="ltr">{opp.minProfitRequired}%</td>
+                  <td className="px-6 py-4">
+                    {opp.status === 'available' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-500">مربحة</span>}
+                    {opp.status === 'analyzing' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-500/10 text-slate-500">تحت الحد الأدنى</span>}
                   </td>
                   <td className="px-6 py-4">
                     <button 
                       disabled={opp.status !== 'available'}
                       className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
                     >
-                      تنفيذ الآن
+                      تنفيذ
                     </button>
                   </td>
                 </tr>

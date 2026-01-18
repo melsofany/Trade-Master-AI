@@ -229,17 +229,24 @@ export async function registerRoutes(
       let p2Idx = Math.floor(Math.random() * userPlatforms.length);
       while (p1Idx === p2Idx) p2Idx = Math.floor(Math.random() * userPlatforms.length);
       
-      const spread = (Math.random() * 2.5).toFixed(2);
-      const statusOptions = ["available", "analyzing", "risk_high"];
-      const status = parseFloat(spread) > 1.5 ? statusOptions[0] : statusOptions[Math.floor(Math.random() * 2)];
+      const basePrice = pair.startsWith("BTC") ? 95000 : pair.startsWith("ETH") ? 2500 : 150;
+      const buyPrice = (basePrice * (1 - Math.random() * 0.01)).toFixed(2);
+      const sellPrice = (basePrice * (1 + Math.random() * 0.01)).toFixed(2);
+      const spread = (((parseFloat(sellPrice) - parseFloat(buyPrice)) / parseFloat(buyPrice)) * 100).toFixed(2);
+      
+      const minProfitRequired = settings?.minProfitPercentage || "0.8";
+      const isProfitable = parseFloat(spread) >= parseFloat(minProfitRequired);
 
       return {
         id: index + 1,
         pair,
         buy: userPlatforms[p1Idx]?.name,
         sell: userPlatforms[p2Idx]?.name,
+        buyPrice,
+        sellPrice,
         spread,
-        status
+        minProfitRequired,
+        status: isProfitable ? "available" : "analyzing"
       };
     });
 
