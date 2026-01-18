@@ -206,14 +206,28 @@ export async function registerRoutes(
 
   // Arbitrage Opportunities
   app.get("/api/opportunities", async (req: any, res) => {
+    const userId = req.user?.claims?.sub || "default_user";
+    const userKeys = await storage.getUserApiKeys(userId);
+    
+    if (userKeys.length < 1) {
+      return res.json([]); // No API keys, no actual opportunities
+    }
+
     const platforms = await storage.getPlatforms();
+    const userPlatforms = platforms.filter(p => userKeys.some(k => k.platformId === p.id));
+    
+    if (userPlatforms.length < 2) {
+      // Need at least 2 platforms for arbitrage
+      return res.json([]);
+    }
+
     const pairs = ["BTC/USDT", "ETH/USDT", "SOL/USDT", "XRP/USDT", "ADA/USDT"];
     
-    // Simulate live data by generating random but realistic opportunities
+    // Simulate live data ONLY between connected platforms
     const opportunities = pairs.map((pair, index) => {
-      const p1Idx = Math.floor(Math.random() * platforms.length);
-      let p2Idx = Math.floor(Math.random() * platforms.length);
-      while (p1Idx === p2Idx) p2Idx = Math.floor(Math.random() * platforms.length);
+      const p1Idx = Math.floor(Math.random() * userPlatforms.length);
+      let p2Idx = Math.floor(Math.random() * userPlatforms.length);
+      while (p1Idx === p2Idx) p2Idx = Math.floor(Math.random() * userPlatforms.length);
       
       const spread = (Math.random() * 2.5).toFixed(2);
       const statusOptions = ["available", "analyzing", "risk_high"];
@@ -222,8 +236,8 @@ export async function registerRoutes(
       return {
         id: index + 1,
         pair,
-        buy: platforms[p1Idx]?.name || "Binance",
-        sell: platforms[p2Idx]?.name || "Kraken",
+        buy: userPlatforms[p1Idx]?.name,
+        sell: userPlatforms[p2Idx]?.name,
         spread,
         status
       };

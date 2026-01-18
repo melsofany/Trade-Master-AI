@@ -168,10 +168,27 @@ export default function Dashboard() {
             تحليل الذكاء الاصطناعي
           </h3>
           <div className="flex-1 space-y-4 overflow-y-auto pr-2 relative z-10 custom-scrollbar">
-            <AILogMessage time="10:42:15" text="تحليل أخبار Binance: لا توجد مخاطر تنظيمية جديدة. الشبكة مستقرة." sentiment="positive" />
-            <AILogMessage time="10:41:02" text="رصد ارتفاع مفاجئ في رسوم غاز الإيثيريوم. تم تعليق صفقات ETH مؤقتاً." sentiment="negative" />
-            <AILogMessage time="10:38:55" text="فحص سيولة زوج SOL/USDT على منصة OKX. السيولة كافية للتنفيذ." sentiment="neutral" />
-            <AILogMessage time="10:35:12" text="مقارنة الأسعار بين 5 منصات... تم العثور على فرصة ربح 1.2%." sentiment="positive" />
+            {opportunities && opportunities.length > 0 ? (
+              <>
+                <AILogMessage 
+                  time={new Date().toLocaleTimeString('ar-SA')} 
+                  text={`تحليل الفرص النشطة: تم رصد ${opportunities.length} فرصة ربح بين المنصات المربوطة.`} 
+                  sentiment="positive" 
+                />
+                {opportunities.map((opp: any, i: number) => (
+                  <AILogMessage 
+                    key={i}
+                    time={new Date().toLocaleTimeString('ar-SA')} 
+                    text={`فحص سيولة ${opp.pair} بين ${opp.buy} و ${opp.sell}. الفرق السعري ${opp.spread}%.`} 
+                    sentiment={parseFloat(opp.spread) > 1.5 ? "positive" : "neutral"} 
+                  />
+                ))}
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                يرجى ربط منصتين على الأقل عبر API Keys لبدء التحليل.
+              </p>
+            )}
           </div>
         </motion.div>
       </div>
