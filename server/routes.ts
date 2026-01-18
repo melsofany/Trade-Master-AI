@@ -359,10 +359,7 @@ export async function registerRoutes(
               }
             }
           } catch (e) {
-            // Silently fail for public exchanges to keep the list clean
-            if (userKeys.length >= 2) {
-               console.error(`Market data error for ${pair} on ${p.name}`);
-            }
+            // Silently fail to keep logs clean unless specifically requested
           }
         }));
 
