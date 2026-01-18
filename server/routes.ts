@@ -356,6 +356,19 @@ export async function registerRoutes(
 
   // Seed Data
   await seedData();
+  
+  // Update existing platforms with actual fees (Initial Sync)
+  const existingPlatforms = await storage.getPlatforms();
+  for (const p of existingPlatforms) {
+    if (!p.makerFee || p.makerFee === "0.001") {
+      const fees = {
+        makerFee: "0.001",
+        takerFee: p.name === "Binance" || p.name === "Bybit" ? "0.001" : "0.002",
+        withdrawalFeeUsdt: p.name === "Binance" ? "0.8" : p.name === "Kraken" ? "1.0" : "1.5"
+      };
+      await storage.updatePlatform(p.id, fees);
+    }
+  }
 
   return httpServer;
 }
