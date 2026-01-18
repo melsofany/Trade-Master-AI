@@ -377,8 +377,8 @@ export async function registerRoutes(
             const sellPrice = prices[sellPlatformName];
 
             if (sellPrice > buyPrice) {
-              const buyPlatform = connectedPlatforms.find(p => p.name === buyPlatformName)!;
-              const sellPlatform = connectedPlatforms.find(p => p.name === sellPlatformName)!;
+              const buyPlatform = platformsToQuery.find(p => p.name === buyPlatformName)!;
+              const sellPlatform = platformsToQuery.find(p => p.name === sellPlatformName)!;
               
               const tradeAmount = parseFloat(settings?.tradeAmountUsdt || "500");
               const minProfitRequired = settings?.minProfitPercentage || "0.5";
