@@ -9,6 +9,9 @@ export const platforms = pgTable("platforms", {
   name: text("name").notNull().unique(), // Binance, Kraken, etc.
   slug: text("slug").notNull().unique(),
   baseUrl: text("base_url").notNull(),
+  makerFee: numeric("maker_fee").default("0.001"), // 0.1% default
+  takerFee: numeric("taker_fee").default("0.001"), // 0.1% default
+  withdrawalFeeUsdt: numeric("withdrawal_fee_usdt").default("1.0"), // Fixed network fee
   isActive: boolean("is_active").default(true),
 });
 

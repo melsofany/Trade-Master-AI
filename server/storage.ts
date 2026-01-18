@@ -34,9 +34,17 @@ export interface IStorage {
   // Balances
   getUserBalances(userId: string): Promise<UserBalance[]>;
   upsertUserBalance(balance: InsertUserBalance): Promise<UserBalance>;
+  updatePlatform(id: number, updates: Partial<Platform>): Promise<Platform>;
 }
 
 export class DatabaseStorage implements IStorage {
+  async updatePlatform(id: number, updates: Partial<Platform>): Promise<Platform> {
+    const [updated] = await db.update(platforms)
+      .set(updates)
+      .where(eq(platforms.id, id))
+      .returning();
+    return updated;
+  }
   // ... existing methods ...
   async getAiModels(userId: string): Promise<AiModel[]> {
     return await db.select().from(aiModels).where(eq(aiModels.userId, userId));
