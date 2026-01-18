@@ -351,6 +351,14 @@ export async function registerRoutes(
           try {
             const exchange = await getExchangeInstance(p.name, userKeysWithPlatform);
             if (exchange) {
+              // Ensure markets are loaded before fetching ticker
+              await exchange.loadMarkets();
+              
+              if (!exchange.markets[pair]) {
+                // Skip if pair is not supported on this exchange
+                return;
+              }
+
               // Use fetchOrderBook for more accurate bid/ask spread analysis if needed, 
               // but fetchTicker is faster for initial discovery
               const ticker = await exchange.fetchTicker(pair);
