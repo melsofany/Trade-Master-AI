@@ -206,10 +206,10 @@ export default function Dashboard() {
             <thead>
               <tr className="bg-secondary/30 text-muted-foreground">
                 <th className="px-6 py-4 text-right font-medium">الزوج</th>
-                <th className="px-6 py-4 text-right font-medium">الشراء (السعر)</th>
-                <th className="px-6 py-4 text-right font-medium">البيع (السعر)</th>
-                <th className="px-6 py-4 text-right font-medium">الفرق (Spread)</th>
-                <th className="px-6 py-4 text-right font-medium">الحد الأدنى للربح</th>
+                <th className="px-6 py-4 text-right font-medium">الشراء/البيع</th>
+                <th className="px-6 py-4 text-right font-medium">الفرق الإجمالي</th>
+                <th className="px-6 py-4 text-right font-medium">الرسوم المتوقعة</th>
+                <th className="px-6 py-4 text-right font-medium">صافي الربح</th>
                 <th className="px-6 py-4 text-right font-medium">المبلغ المطلوب</th>
                 <th className="px-6 py-4 text-right font-medium">الحالة</th>
                 <th className="px-6 py-4 text-right font-medium">الإجراء</th>
@@ -220,28 +220,32 @@ export default function Dashboard() {
                 <tr key={opp.id} className="hover:bg-secondary/20 transition-colors">
                   <td className="px-6 py-4 font-bold ltr font-mono">{opp.pair}</td>
                   <td className="px-6 py-4">
-                    <div className="flex flex-col">
-                      <span className="font-medium">{opp.buy}</span>
-                      <span className="text-xs text-muted-foreground font-mono" dir="ltr">${opp.buyPrice}</span>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] bg-emerald-500/10 text-emerald-600 px-1 rounded">شراء:</span>
+                        <span className="font-medium text-xs">{opp.buy}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] bg-rose-500/10 text-rose-600 px-1 rounded">بيع:</span>
+                        <span className="font-medium text-xs">{opp.sell}</span>
+                      </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-col">
-                      <span className="font-medium">{opp.sell}</span>
-                      <span className="text-xs text-muted-foreground font-mono" dir="ltr">${opp.sellPrice}</span>
-                    </div>
+                  <td className="px-6 py-4 font-mono text-xs" dir="ltr">{opp.spread}%</td>
+                  <td className="px-6 py-4 font-mono text-xs text-rose-500" dir="ltr">-{opp.fees}%</td>
+                  <td className="px-6 py-4 font-bold text-emerald-500 font-mono" dir="ltr">
+                    {opp.netProfit}%
+                    <div className="text-[10px] text-muted-foreground font-normal">≈ ${opp.expectedProfitUsdt}</div>
                   </td>
-                  <td className="px-6 py-4 text-emerald-500 font-bold font-mono" dir="ltr">{opp.spread}%</td>
-                  <td className="px-6 py-4 font-mono text-muted-foreground" dir="ltr">{opp.minProfitRequired}%</td>
-                  <td className="px-6 py-4 font-bold text-primary font-mono" dir="ltr">${opp.minAmountRequired}</td>
+                  <td className="px-6 py-4 font-bold text-primary font-mono text-xs" dir="ltr">${opp.minAmountRequired}</td>
                   <td className="px-6 py-4">
-                    {opp.status === 'available' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-500">مربحة</span>}
-                    {opp.status === 'analyzing' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-500/10 text-slate-500">تحت الحد الأدنى</span>}
+                    {opp.status === 'available' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-green-500/10 text-green-500">مربحة بعد الرسوم</span>}
+                    {opp.status === 'analyzing' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-500/10 text-slate-500">غير مربحة</span>}
                   </td>
                   <td className="px-6 py-4">
                     <button 
                       disabled={opp.status !== 'available'}
-                      className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
+                      className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-[10px] font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
                     >
                       تنفيذ
                     </button>

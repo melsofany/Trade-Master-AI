@@ -236,11 +236,22 @@ export async function registerRoutes(
       const spread = (((parseFloat(sellPrice) - parseFloat(buyPrice)) / parseFloat(buyPrice)) * 100).toFixed(2);
       
       const minProfitRequired = settings?.minProfitPercentage || "0.8";
-      const isProfitable = parseFloat(spread) >= parseFloat(minProfitRequired);
+      
+      // Assume standard fees: 0.1% maker/taker fee per exchange + 0.05% estimated withdrawal/network fee
+      const exchangeFee = 0.001; // 0.1%
+      const totalFeesPercentage = (exchangeFee * 2 + 0.0005) * 100; // Total fees in % (approx 0.25%)
+      
+      const netSpread = parseFloat(spread) - totalFeesPercentage;
+      const isProfitable = netSpread >= parseFloat(minProfitRequired);
       
       // Calculate minimum amount required to cover fees and hit target profit
-      // Simple formula: base amount adjusted for spread vs minProfit
-      const minAmountRequired = (parseFloat(settings?.tradeAmountUsdt || "100") * (parseFloat(minProfitRequired) / Math.max(parseFloat(spread), 0.1))).toFixed(2);
+      // We need (Amount * Spread) - (Amount * Fees) >= (Amount * MinProfit)
+      // This actually means Spread - Fees >= MinProfit
+      // To find the actual amount needed if we want to hit a specific USDT profit target:
+      const tradeAmount = parseFloat(settings?.tradeAmountUsdt || "100");
+      const expectedProfitUsdt = (tradeAmount * (netSpread / 100)).toFixed(2);
+      
+      const minAmountRequired = (tradeAmount * (parseFloat(minProfitRequired) / Math.max(netSpread, 0.1))).toFixed(2);
 
       return {
         id: index + 1,
@@ -250,6 +261,9 @@ export async function registerRoutes(
         buyPrice,
         sellPrice,
         spread,
+        fees: totalFeesPercentage.toFixed(2),
+        netProfit: netSpread.toFixed(2),
+        expectedProfitUsdt,
         minProfitRequired,
         minAmountRequired,
         status: isProfitable ? "available" : "analyzing"
