@@ -359,7 +359,10 @@ export async function registerRoutes(
               }
             }
           } catch (e) {
-            // Silently fail to keep logs clean unless specifically requested
+            // Log connection errors so frontend can show status
+            if (userKeysWithPlatform.some(k => k.platformName === p.name)) {
+              console.error(`Connection error for ${p.name}:`, e);
+            }
           }
         }));
 
