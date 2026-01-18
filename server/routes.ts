@@ -296,25 +296,26 @@ export async function registerRoutes(
       const basePrice = pair.startsWith("BTC") ? 95000 : pair.startsWith("ETH") ? 2500 : 150;
       const buyPrice = (basePrice * (1 - Math.random() * 0.01)).toFixed(2);
       const sellPrice = (basePrice * (1 + Math.random() * 0.01)).toFixed(2);
-      const spread = (((parseFloat(sellPrice) - parseFloat(buyPrice)) / parseFloat(buyPrice)) * 100).toFixed(2);
       
-      const minProfitRequired = settings?.minProfitPercentage || "0.8";
-      
-      // Assume standard fees: 0.1% maker/taker fee per exchange + 0.05% estimated withdrawal/network fee
-      const exchangeFee = 0.001; // 0.1%
-      const totalFeesPercentage = (exchangeFee * 2 + 0.0005) * 100; // Total fees in % (approx 0.25%)
-      
-      const netSpread = parseFloat(spread) - totalFeesPercentage;
-      const isProfitable = netSpread >= parseFloat(minProfitRequired);
-      
-      // Calculate minimum amount required to cover fees and hit target profit
-      // We need (Amount * Spread) - (Amount * Fees) >= (Amount * MinProfit)
-      // This actually means Spread - Fees >= MinProfit
-      // To find the actual amount needed if we want to hit a specific USDT profit target:
       const tradeAmount = parseFloat(settings?.tradeAmountUsdt || "100");
-      const expectedProfitUsdt = (tradeAmount * (netSpread / 100)).toFixed(2);
+      const minProfitRequired = settings?.minProfitPercentage || "0.8";
+
+      // Fees based on actual exchange standards
+      const buyFeeRate = 0.001; // 0.1% Standard Spot Fee
+      const sellFeeRate = 0.001; // 0.1% Standard Spot Fee
+      const networkFeeUsdt = 1.0; // Fixed network fee (e.g. USDT TRC20)
       
-      const minAmountRequired = (tradeAmount * (parseFloat(minProfitRequired) / Math.max(netSpread, 0.1))).toFixed(2);
+      const buyCost = parseFloat(buyPrice) * (tradeAmount / parseFloat(buyPrice));
+      const buyFee = tradeAmount * buyFeeRate;
+      const sellFee = (parseFloat(sellPrice) * (tradeAmount / parseFloat(buyPrice))) * sellFeeRate;
+      const totalFeesUsdt = buyFee + sellFee + networkFeeUsdt;
+
+      const spread = (((parseFloat(sellPrice) - parseFloat(buyPrice)) / parseFloat(buyPrice)) * 100).toFixed(2);
+      const expectedProfitUsdt = ((parseFloat(sellPrice) - parseFloat(buyPrice)) * (tradeAmount / parseFloat(buyPrice)) - totalFeesUsdt).toFixed(2);
+      const netSpread = ((parseFloat(expectedProfitUsdt) / tradeAmount) * 100).toFixed(2);
+      
+      const isProfitable = parseFloat(netSpread) >= parseFloat(minProfitRequired);
+      const minAmountRequired = (tradeAmount * (parseFloat(minProfitRequired) / Math.max(parseFloat(netSpread), 0.1))).toFixed(2);
 
       return {
         id: index + 1,
@@ -324,8 +325,8 @@ export async function registerRoutes(
         buyPrice,
         sellPrice,
         spread,
-        fees: totalFeesPercentage.toFixed(2),
-        netProfit: netSpread.toFixed(2),
+        fees: ((totalFeesUsdt / tradeAmount) * 100).toFixed(2),
+        netProfit: netSpread,
         expectedProfitUsdt,
         minProfitRequired,
         minAmountRequired,
