@@ -435,6 +435,8 @@ export async function registerRoutes(
           for (let j = 0; j < platformNames.length; j++) {
             if (i === j) continue;
 
+            const buyPlatformName = platformNames[i];
+            const sellPlatformName = platformNames[j];
             const buyPlatformData = prices[buyPlatformName];
             const sellPlatformData = prices[sellPlatformName];
             const buyPrice = buyPlatformData.ask; // Buy at best ask
