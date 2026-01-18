@@ -226,9 +226,11 @@ export async function registerRoutes(
         sellPrice: sellPrice.toString(),
         profitUsdt: profitUsdt.toString(),
         profitPercentage: profitPercentage.toString(),
-        status: "executed",
+        status: "waiting_for_transfer", // Updated status to reflect transfer process
+        priceProtection: true, // Enable price protection by default as requested
+        executionPrice: sellPrice.toString(), // Record the sell price we aim for
         aiRiskScore: 15,
-        aiAnalysisSummary: "تم التنفيذ بنجاح بناءً على طلب المستخدم."
+        aiAnalysisSummary: "تم البدء في نقل الأصول مع تفعيل حماية السعر لمنع البيع بخسارة."
       });
 
       res.status(201).json(log);

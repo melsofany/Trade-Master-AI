@@ -49,7 +49,9 @@ export const tradeLogs = pgTable("trade_logs", {
   sellPrice: numeric("sell_price").notNull(),
   profitUsdt: numeric("profit_usdt"),
   profitPercentage: numeric("profit_percentage"),
-  status: text("status").notNull(), // executed, failed, simulated
+  status: text("status").notNull(), // executed, failed, simulated, waiting_for_transfer
+  priceProtection: boolean("price_protection").default(true),
+  executionPrice: numeric("execution_price"),
   aiRiskScore: integer("ai_risk_score"), // 0-100
   aiAnalysisSummary: text("ai_analysis_summary"),
   executedAt: timestamp("executed_at").defaultNow(),

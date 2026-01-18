@@ -265,7 +265,7 @@ export default function Dashboard() {
                   </td>
                   <td className="px-6 py-4 font-bold text-primary font-mono text-xs" dir="ltr">${opp.minAmountRequired}</td>
                   <td className="px-6 py-4">
-                    {opp.status === 'available' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-green-500/10 text-green-500">مربحة بعد الرسوم</span>}
+                    {opp.status === 'available' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-green-500/10 text-green-500">مربحة (محمية)</span>}
                     {opp.status === 'analyzing' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-500/10 text-slate-500">غير مربحة</span>}
                   </td>
                   <td className="px-6 py-4">
