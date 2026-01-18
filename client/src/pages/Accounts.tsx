@@ -218,12 +218,7 @@ export default function Accounts() {
                   const platform = platforms?.find(p => p.id === balance.platformId);
                   return (
                     <tr key={balance.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-6 py-4 font-bold flex items-center gap-2">
-                        {platform?.name || "Unknown"}
-                        {balance.status === "error" && (
-                          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" title="خطأ في الاتصال" />
-                        )}
-                      </td>
+                      <td className="px-6 py-4 font-bold">{platform?.name || "Unknown"}</td>
                       <td className="px-6 py-4">
                         <span className="px-2 py-1 rounded bg-slate-100 font-bold text-[10px]">{balance.asset}</span>
                       </td>
