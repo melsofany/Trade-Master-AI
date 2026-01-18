@@ -358,10 +358,14 @@ export async function registerRoutes(
                 prices[p.name] = ticker.last;
               }
             }
-          } catch (e) {
-            // Silently fail for public exchanges to keep the list clean
+          } catch (e: any) {
+            // Send notification for connection error if it's a persistent issue or major platform
             if (userKeys.length >= 2) {
-               console.error(`Market data error for ${pair} on ${p.name}`);
+               console.error(`Market data error for ${pair} on ${p.name}:`, e.message);
+               // If it's an authentication error or connection timeout, notify the user
+               if (e.message.includes('Authentication') || e.message.includes('Request timeout')) {
+                 await sendTelegramNotification(userId, `⚠️ خطأ في الاتصال بمنصة ${p.name}: ${e.message}`);
+               }
             }
           }
         }));
