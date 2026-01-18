@@ -198,21 +198,21 @@ export default function Dashboard() {
               <>
                 <AILogMessage 
                   time={new Date().toLocaleTimeString('ar-SA')} 
-                  text={`تحليل الفرص النشطة: تم رصد ${opportunities.length} فرصة ربح بين المنصات المربوطة.`} 
+                  text={`تحليل السوق المباشر: تم رصد ${opportunities.length} فرصة ربح محتملة.`} 
                   sentiment="positive" 
                 />
                 {opportunities.map((opp: any, i: number) => (
                   <AILogMessage 
                     key={i}
                     time={new Date().toLocaleTimeString('ar-SA')} 
-                    text={`فحص سيولة ${opp.pair} بين ${opp.buy} و ${opp.sell}. الفرق السعري ${opp.spread}%.`} 
-                    sentiment={parseFloat(opp.spread) > 1.5 ? "positive" : "neutral"} 
+                    text={`رصد اختلاف سعري لزوج ${opp.pair} بين ${opp.buy} و ${opp.sell}. الربح الصافي المقدر ${opp.netProfit}%.`} 
+                    sentiment={parseFloat(opp.netProfit) > 1.0 ? "positive" : "neutral"} 
                   />
                 ))}
               </>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">
-                يرجى ربط منصتين على الأقل عبر API Keys لبدء التحليل.
+                جاري جلب بيانات السوق الحية وتحليل الفرص...
               </p>
             )}
           </div>
