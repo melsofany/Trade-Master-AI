@@ -13,27 +13,35 @@ import ccxt from "ccxt";
 const exchangeInstances: Record<string, any> = {};
 
 async function getExchangeInstance(platformName: string, keys: any[]) {
-  const key = keys.find(k => {
-    const p = exchangeInstances[platformName];
-    return k.platformName === platformName;
-  });
-  
   const slug = platformName.toLowerCase().replace(".", "");
   if (!ccxt.exchanges.includes(slug)) return null;
 
-  if (!exchangeInstances[platformName]) {
-    const userKey = keys.find(k => k.platformName === platformName);
-    if (userKey) {
-      exchangeInstances[platformName] = new (ccxt as any)[slug]({
-        apiKey: userKey.apiKey,
-        secret: userKey.apiSecret,
-        enableRateLimit: true,
-      });
-    } else {
-      exchangeInstances[platformName] = new (ccxt as any)[slug]({ enableRateLimit: true });
+  // Key for our cache (includes platform and presence of keys)
+  const userKey = keys.find(k => k.platformName === platformName);
+  const cacheKey = `${platformName}_${userKey ? 'private' : 'public'}`;
+
+  if (!exchangeInstances[cacheKey]) {
+    try {
+      if (userKey) {
+        exchangeInstances[cacheKey] = new (ccxt as any)[slug]({
+          apiKey: userKey.apiKey,
+          secret: userKey.apiSecret,
+          enableRateLimit: true,
+          options: { 'adjustForTimeDifference': true }
+        });
+      } else {
+        // Public instance for market data
+        exchangeInstances[cacheKey] = new (ccxt as any)[slug]({ 
+          enableRateLimit: true,
+          options: { 'adjustForTimeDifference': true }
+        });
+      }
+    } catch (e) {
+      console.error(`Failed to initialize exchange ${platformName}:`, e);
+      return null;
     }
   }
-  return exchangeInstances[platformName];
+  return exchangeInstances[cacheKey];
 }
 
 // Helper to send telegram message
@@ -316,17 +324,18 @@ export async function registerRoutes(
     const userKeys = await storage.getUserApiKeys(userId);
     const settings = await storage.getBotSettings(userId);
     
-    if (userKeys.length < 2) {
-      return res.json([]); // Need at least 2 platforms for real arbitrage
-    }
-
     const platforms = await storage.getPlatforms();
     const userKeysWithPlatform = userKeys.map(k => ({
       ...k,
       platformName: platforms.find(p => p.id === k.platformId)?.name || ""
     }));
 
-    const connectedPlatforms = platforms.filter(p => userKeysWithPlatform.some(k => k.platformId === p.id));
+    // If user has keys, use them. Otherwise, use top major platforms for "Public Discovery Mode"
+    const majorPlatforms = ["Binance", "Kraken", "KuCoin", "Bybit", "OKX"];
+    const platformsToQuery = userKeys.length >= 2 
+      ? platforms.filter(p => userKeysWithPlatform.some(k => k.platformId === p.id))
+      : platforms.filter(p => majorPlatforms.includes(p.name));
+
     const pairs = ["BTC/USDT", "ETH/USDT", "SOL/USDT"];
     const results = [];
 
@@ -334,16 +343,23 @@ export async function registerRoutes(
       for (const pair of pairs) {
         const prices: Record<string, number> = {};
         
-        // Fetch real prices from connected exchanges
-        await Promise.all(connectedPlatforms.map(async (p) => {
+        // Fetch prices (Parallel)
+        await Promise.all(platformsToQuery.map(async (p) => {
           try {
             const exchange = await getExchangeInstance(p.name, userKeysWithPlatform);
             if (exchange) {
+              // Use fetchOrderBook for more accurate bid/ask spread analysis if needed, 
+              // but fetchTicker is faster for initial discovery
               const ticker = await exchange.fetchTicker(pair);
-              prices[p.name] = ticker.last;
+              if (ticker && ticker.last) {
+                prices[p.name] = ticker.last;
+              }
             }
           } catch (e) {
-            console.error(`Error fetching price for ${pair} on ${p.name}:`, e);
+            // Silently fail for public exchanges to keep the list clean
+            if (userKeys.length >= 2) {
+               console.error(`Market data error for ${pair} on ${p.name}`);
+            }
           }
         }));
 
