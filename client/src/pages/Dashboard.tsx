@@ -210,6 +210,7 @@ export default function Dashboard() {
                 <th className="px-6 py-4 text-right font-medium">البيع (السعر)</th>
                 <th className="px-6 py-4 text-right font-medium">الفرق (Spread)</th>
                 <th className="px-6 py-4 text-right font-medium">الحد الأدنى للربح</th>
+                <th className="px-6 py-4 text-right font-medium">المبلغ المطلوب</th>
                 <th className="px-6 py-4 text-right font-medium">الحالة</th>
                 <th className="px-6 py-4 text-right font-medium">الإجراء</th>
               </tr>
@@ -232,6 +233,7 @@ export default function Dashboard() {
                   </td>
                   <td className="px-6 py-4 text-emerald-500 font-bold font-mono" dir="ltr">{opp.spread}%</td>
                   <td className="px-6 py-4 font-mono text-muted-foreground" dir="ltr">{opp.minProfitRequired}%</td>
+                  <td className="px-6 py-4 font-bold text-primary font-mono" dir="ltr">${opp.minAmountRequired}</td>
                   <td className="px-6 py-4">
                     {opp.status === 'available' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-500">مربحة</span>}
                     {opp.status === 'analyzing' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-500/10 text-slate-500">تحت الحد الأدنى</span>}

@@ -237,6 +237,10 @@ export async function registerRoutes(
       
       const minProfitRequired = settings?.minProfitPercentage || "0.8";
       const isProfitable = parseFloat(spread) >= parseFloat(minProfitRequired);
+      
+      // Calculate minimum amount required to cover fees and hit target profit
+      // Simple formula: base amount adjusted for spread vs minProfit
+      const minAmountRequired = (parseFloat(settings?.tradeAmountUsdt || "100") * (parseFloat(minProfitRequired) / Math.max(parseFloat(spread), 0.1))).toFixed(2);
 
       return {
         id: index + 1,
@@ -247,6 +251,7 @@ export async function registerRoutes(
         sellPrice,
         spread,
         minProfitRequired,
+        minAmountRequired,
         status: isProfitable ? "available" : "analyzing"
       };
     });
