@@ -1,6 +1,7 @@
 import React from "react";
 import { Layout } from "@/components/Layout";
 import { useDashboardStats } from "@/hooks/use-dashboard";
+import { useQuery } from "@tanstack/react-query";
 import { formatCurrency } from "@/lib/utils";
 import { 
   TrendingUp, 
@@ -35,7 +36,13 @@ const opportunities = [
 ];
 
 export default function Dashboard() {
-  const { data: stats, isLoading } = useDashboardStats();
+  const { data: stats, isLoading: statsLoading } = useDashboardStats();
+  const { data: opportunities, isLoading: oppsLoading } = useQuery<any[]>({
+    queryKey: ["/api/opportunities"],
+    refetchInterval: 5000, // Refresh every 5 seconds for live feel
+  });
+
+  const isLoading = statsLoading || oppsLoading;
 
   const container = {
     hidden: { opacity: 0 },
@@ -190,7 +197,7 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {opportunities.map((opp) => (
+              {opportunities?.map((opp) => (
                 <tr key={opp.id} className="hover:bg-secondary/20 transition-colors">
                   <td className="px-6 py-4 font-bold ltr font-mono">{opp.pair}</td>
                   <td className="px-6 py-4">{opp.buy}</td>
@@ -211,6 +218,11 @@ export default function Dashboard() {
                   </td>
                 </tr>
               ))}
+              {opportunities?.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="text-center py-8 text-muted-foreground">لا توجد فرص متاحة حالياً. جاري البحث...</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

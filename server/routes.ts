@@ -204,6 +204,34 @@ export async function registerRoutes(
     });
   });
 
+  // Arbitrage Opportunities
+  app.get("/api/opportunities", async (req: any, res) => {
+    const platforms = await storage.getPlatforms();
+    const pairs = ["BTC/USDT", "ETH/USDT", "SOL/USDT", "XRP/USDT", "ADA/USDT"];
+    
+    // Simulate live data by generating random but realistic opportunities
+    const opportunities = pairs.map((pair, index) => {
+      const p1Idx = Math.floor(Math.random() * platforms.length);
+      let p2Idx = Math.floor(Math.random() * platforms.length);
+      while (p1Idx === p2Idx) p2Idx = Math.floor(Math.random() * platforms.length);
+      
+      const spread = (Math.random() * 2.5).toFixed(2);
+      const statusOptions = ["available", "analyzing", "risk_high"];
+      const status = parseFloat(spread) > 1.5 ? statusOptions[0] : statusOptions[Math.floor(Math.random() * 2)];
+
+      return {
+        id: index + 1,
+        pair,
+        buy: platforms[p1Idx]?.name || "Binance",
+        sell: platforms[p2Idx]?.name || "Kraken",
+        spread,
+        status
+      };
+    });
+
+    res.json(opportunities);
+  });
+
   // Seed Data
   await seedData();
 
