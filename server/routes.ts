@@ -379,7 +379,7 @@ export async function registerRoutes(
 
     try {
       for (const pair of pairs) {
-        const prices: Record<string, number> = {};
+        const prices: Record<string, any> = {};
         
         // Fetch prices (Parallel)
         await Promise.all(platformsToQuery.map(async (p) => {
@@ -394,11 +394,25 @@ export async function registerRoutes(
                 return;
               }
 
-              // Use fetchOrderBook for more accurate bid/ask spread analysis if needed, 
-              // but fetchTicker is faster for initial discovery
-              const ticker = await exchange.fetchTicker(pair);
-              if (ticker && ticker.last) {
-                prices[p.name] = ticker.last;
+              // Use fetchOrderBook for accurate slippage calculation
+              const orderBook = await exchange.fetchOrderBook(pair, 5); // Fetch top 5 levels
+              const bids = orderBook.bids || [];
+              const asks = orderBook.asks || [];
+
+              if (bids.length > 0 && asks.length > 0) {
+                // For simplified logic: Best Bid (Sell price) and Best Ask (Buy price)
+                // In full implementation, we'd traverse the book for the specific trade amount
+                const bestBid = bids[0][0]; // Price to sell at
+                const bestAsk = asks[0][0]; // Price to buy at
+                
+                prices[p.name] = {
+                  bid: bestBid,
+                  ask: bestAsk,
+                  bidVolume: bids[0][1],
+                  askVolume: asks[0][1],
+                  walletStatus: p.walletStatus || "ok",
+                  networks: p.supportedNetworks || []
+                };
               }
             }
           } catch (e: any) {
@@ -421,31 +435,47 @@ export async function registerRoutes(
           for (let j = 0; j < platformNames.length; j++) {
             if (i === j) continue;
 
-            const buyPlatformName = platformNames[i];
-            const sellPlatformName = platformNames[j];
-            const buyPrice = prices[buyPlatformName];
-            const sellPrice = prices[sellPlatformName];
+            const buyPlatformData = prices[buyPlatformName];
+            const sellPlatformData = prices[sellPlatformName];
+            const buyPrice = buyPlatformData.ask; // Buy at best ask
+            const sellPrice = sellPlatformData.bid; // Sell at best bid
 
             if (sellPrice > buyPrice) {
               const buyPlatform = platformsToQuery.find(p => p.name === buyPlatformName)!;
               const sellPlatform = platformsToQuery.find(p => p.name === sellPlatformName)!;
               
+              // Check wallet status and network compatibility
+              const isWalletOk = buyPlatformData.walletStatus === "ok" && sellPlatformData.walletStatus === "ok";
+              const commonNetworks = buyPlatformData.networks.filter((n: string) => sellPlatformData.networks.includes(n));
+              const isNetworkCompatible = commonNetworks.length > 0;
+
+              if (!isWalletOk || !isNetworkCompatible) continue;
+
               const tradeAmount = parseFloat(settings?.tradeAmountUsdt || "500");
               const minProfitRequired = settings?.minProfitPercentage || "0.5";
-
+              
+              // Slippage check (Simplified AI simulation)
+              const availableLiquidity = Math.min(buyPlatformData.askVolume * buyPrice, sellPlatformData.bidVolume * sellPrice);
+              const slippageImpact = tradeAmount > availableLiquidity ? 0.005 : 0; // 0.5% slippage if amount > available top-tier liquidity
+              
               const buyFeeRate = parseFloat(buyPlatform.takerFee || "0.001");
               const sellFeeRate = parseFloat(sellPlatform.takerFee || "0.001");
               const networkFeeUsdt = parseFloat(sellPlatform.withdrawalFeeUsdt || "1.0");
               
-              const buyFee = tradeAmount * buyFeeRate;
-              const sellFee = (sellPrice * (tradeAmount / buyPrice)) * sellFeeRate;
+              const buyFee = tradeAmount * (buyFeeRate + slippageImpact);
+              const sellFee = (sellPrice * (tradeAmount / buyPrice)) * (sellFeeRate + slippageImpact);
               const totalFeesUsdt = buyFee + sellFee + networkFeeUsdt;
 
               const grossProfitUsdt = (sellPrice - buyPrice) * (tradeAmount / buyPrice);
               const netProfitUsdt = grossProfitUsdt - totalFeesUsdt;
               
-              // Only include profitable opportunities or those very close to break-even for analyzing
-              if (netProfitUsdt < -5.0) continue; 
+              // Predictive Analysis (AI Simulation)
+              // If net spread is high, AI checks if it's likely to persist
+              const aiRiskScore = netProfitUsdt > (tradeAmount * 0.05) ? 80 : 15; // High profit often means high risk/anomaly
+              const aiRecommendation = aiRiskScore > 50 ? "تحذير: ربح غير طبيعي، قد يكون خللاً في المنصة" : "فرصة مستقرة تقنياً";
+
+              // Only include profitable opportunities
+              if (netProfitUsdt < 0) continue; 
 
               const netSpread = (netProfitUsdt / tradeAmount) * 100;
               const spread = ((sellPrice - buyPrice) / buyPrice) * 100;
@@ -462,7 +492,9 @@ export async function registerRoutes(
                 netProfit: netSpread.toFixed(2),
                 expectedProfitUsdt: netProfitUsdt.toFixed(2),
                 minProfitRequired,
-                minAmountRequired: (tradeAmount * (parseFloat(minProfitRequired) / Math.max(netSpread, 0.1))).toFixed(2),
+                aiRiskScore,
+                aiRecommendation,
+                network: commonNetworks[0] || "Unknown",
                 status: netSpread >= parseFloat(minProfitRequired) ? "available" : "analyzing"
               });
             }

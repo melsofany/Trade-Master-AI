@@ -13,6 +13,8 @@ export const platforms = pgTable("platforms", {
   takerFee: numeric("taker_fee").default("0.001"), // 0.1% default
   withdrawalFeeUsdt: numeric("withdrawal_fee_usdt").default("1.0"), // Fixed network fee
   isActive: boolean("is_active").default(true),
+  supportedNetworks: jsonb("supported_networks").default(["TRC20", "ERC20", "BEP20"]),
+  walletStatus: text("wallet_status").default("ok"), // ok, maintenance, disabled
 });
 
 // === User API Keys (Encrypted ideally, simplified for demo) ===
