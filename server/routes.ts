@@ -318,7 +318,42 @@ export async function registerRoutes(
     }
   });
 
-  // Arbitrage Opportunities
+  // Platform Status
+  app.get("/api/platforms/status", async (req: any, res) => {
+    const userId = req.user?.claims?.sub || "default_user";
+    const userKeys = await storage.getUserApiKeys(userId);
+    const platforms = await storage.getPlatforms();
+    
+    const status = await Promise.all(platforms.map(async (p) => {
+      const userKey = userKeys.find(k => k.platformId === p.id);
+      if (!userKey) return null;
+
+      let isConnected = false;
+      let error = null;
+
+      try {
+        const exchange = await getExchangeInstance(p.name, userKeys.map(k => ({
+          ...k,
+          platformName: platforms.find(pl => pl.id === k.platformId)?.name || ""
+        })));
+        if (exchange) {
+          await exchange.loadMarkets();
+          isConnected = true;
+        }
+      } catch (e: any) {
+        error = e.message;
+      }
+
+      return {
+        id: p.id,
+        name: p.name,
+        isConnected,
+        error
+      };
+    }));
+
+    res.json(status.filter(s => s !== null));
+  });
   app.get("/api/opportunities", async (req: any, res) => {
     const userId = req.user?.claims?.sub || "default_user";
     const userKeys = await storage.getUserApiKeys(userId);

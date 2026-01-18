@@ -39,6 +39,11 @@ const opportunities = [
 
 export default function Dashboard() {
   const { toast } = useToast();
+  const { data: platformStatus } = useQuery<any[]>({
+    queryKey: ["/api/platforms/status"],
+    refetchInterval: 10000,
+  });
+
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: opportunities, isLoading: oppsLoading, error: oppsError } = useQuery<any[]>({
     queryKey: ["/api/opportunities"],
@@ -117,8 +122,22 @@ export default function Dashboard() {
           <p className="text-muted-foreground mt-1">مراقبة حية للأسواق والفرص الاستثمارية</p>
         </div>
         <div className="flex items-center gap-3">
-           <span className="px-3 py-1 rounded-full bg-green-500/10 text-green-500 text-sm font-medium border border-green-500/20 flex items-center gap-2">
-             <span className="w-2 h-2 rounded-full bg-green-500 animate-ping" />
+           {platformStatus?.map((p: any) => (
+             <span 
+               key={p.id}
+               title={p.error || "متصل"}
+               className={`px-3 py-1 rounded-full text-xs font-medium border flex items-center gap-2 transition-all hover:scale-105 ${
+                 p.isConnected 
+                   ? 'bg-green-500/10 text-green-500 border-green-500/20' 
+                   : 'bg-rose-500/10 text-rose-500 border-rose-500/20'
+               }`}
+             >
+               <span className={`w-1.5 h-1.5 rounded-full ${p.isConnected ? 'bg-green-500 animate-pulse' : 'bg-rose-500'}`} />
+               {p.name}
+             </span>
+           ))}
+           <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-500 text-sm font-medium border border-blue-500/20 flex items-center gap-2">
+             <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
              السوق نشط
            </span>
         </div>
