@@ -175,7 +175,7 @@ export async function registerRoutes(
         userId,
         isActive: false,
         riskLevel: "medium",
-        minProfitPercentage: "0.8",
+        minProfitPercentage: "0.3",
         tradeAmountUsdt: "100",
         refreshRateSec: 10
       });
@@ -422,11 +422,25 @@ export async function registerRoutes(
 
     const pairs = [
       "BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT", "XRP/USDT", 
-      "ADA/USDT", "DOT/USDT", "LINK/USDT", "MATIC/USDT", "AVAX/USDT"
+      "ADA/USDT", "DOT/USDT", "LINK/USDT", "MATIC/USDT", "AVAX/USDT",
+      "DOGE/USDT", "SHIB/USDT", "LTC/USDT", "TRX/USDT", "UNI/USDT",
+      "NEAR/USDT", "APT/USDT", "ARB/USDT", "OP/USDT", "TIA/USDT",
+      "RNDR/USDT", "INJ/USDT", "STX/USDT", "FET/USDT", "AGIX/USDT",
+      "PEPE/USDT", "FLOKI/USDT", "BONK/USDT", "WIF/USDT", "ORDI/USDT",
+      "SATS/USDT", "SEI/USDT", "SUI/USDT", "BEAM/USDT", "PYTH/USDT",
+      "JUP/USDT", "DYM/USDT", "STRK/USDT", "AXL/USDT", "METIS/USDT",
+      "PENDLE/USDT", "MAV/USDT", "EDU/USDT", "ID/USDT", "HOOK/USDT",
+      "ARKM/USDT", "CYBER/USDT", "WLD/USDT", "HFT/USDT", "GFT/USDT"
     ];
     
     // Use Promise.all for all pairs to maximize speed
     try {
+      // Pre-load markets for all exchanges in parallel to avoid redundant calls
+      await Promise.all(platformsToQuery.map(async (p) => {
+        const exchange = await getExchangeInstance(p.name, userKeysWithPlatform);
+        if (exchange) await exchange.loadMarkets();
+      }));
+
       const results = await Promise.all(pairs.map(async (pair) => {
         const pairResults = [];
         const prices: Record<string, any> = {};
@@ -436,8 +450,6 @@ export async function registerRoutes(
           try {
             const exchange = await getExchangeInstance(p.name, userKeysWithPlatform);
             if (exchange) {
-              // Ensure markets are loaded before fetching ticker
-              await exchange.loadMarkets();
               
               if (!exchange.markets[pair]) {
                 // Skip if pair is not supported on this exchange
