@@ -57,8 +57,13 @@ export const tradeLogs = pgTable("trade_logs", {
   status: text("status").notNull(), // executed, failed, simulated, waiting_for_transfer
   priceProtection: boolean("price_protection").default(true),
   executionPrice: numeric("execution_price"),
+  stopLoss: numeric("stop_loss"),
+  takeProfit: numeric("take_profit"),
+  riskPercentage: numeric("risk_percentage"),
+  isPaperTrade: boolean("is_paper_trade").default(false),
   aiRiskScore: integer("ai_risk_score"), // 0-100
   aiAnalysisSummary: text("ai_analysis_summary"),
+  technicalSignals: jsonb("technical_signals"), // RSI, MACD, etc.
   executedAt: timestamp("executed_at").defaultNow(),
 });
 

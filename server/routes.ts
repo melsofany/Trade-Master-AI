@@ -12,6 +12,19 @@ import ccxt from "ccxt";
 // Cache for exchange instances
 const exchangeInstances: Record<string, any> = {};
 
+/**
+ * 🗺️ خريطة طريق تطوير Trade-Master-AI (To-Do List)
+ * --------------------------------------------------
+ * [ ] المرحلة 1: نظام Stop Loss / Take Profit إجباري (إغلاق تلقائي وعرض مرئي)
+ * [ ] المرحلة 2: إدارة المخاطر الكاملة (حساب حجم الصفقة بناءً على % المخاطرة)
+ * [ ] المرحلة 3: محرك Backtesting (Win Rate, ROI, Profit Factor لـ 100 صفقة)
+ * [ ] المرحلة 4: وضع التداول الوهمي (Paper Trading Mode) مع تتبع الرصيد
+ * [ ] المرحلة 5: مراقبة فورية (تحديث كل 3 ثوانٍ و PnL حي)
+ * [ ] المرحلة 6: تحليل فني متقدم (RSI, MACD, Bollinger Bands, Volume)
+ * [ ] المرحلة 7: إشارات ذكاء اصطناعي (نسبة الثقة وتحديث كل 30 ثانية)
+ * [ ] المرحلة 8: إدارة المراكز (Progress bar مرئي وإغلاق سريع)
+ */
+
 // Helper to calculate VWAP for a target amount
 function calculateVWAP(orders: [number, number][], targetAmountUsdt: number, priceType: 'bid' | 'ask'): number {
   let remainingUsdt = targetAmountUsdt;
