@@ -223,15 +223,14 @@ export default function Dashboard() {
             تحليل الذكاء الاصطناعي
           </h3>
           <div className="flex-1 space-y-4 overflow-y-auto pr-2 relative z-10 custom-scrollbar">
-            {opportunities && opportunities.filter((o: any) => parseFloat(o.netProfit) > -1.0).length > 0 ? (
+            {opportunities && opportunities.length > 0 ? (
               <>
                 <AILogMessage 
                   time={new Date().toLocaleTimeString('ar-SA')} 
-                  text={`تحليل السوق المباشر: تم رصد ${opportunities.filter((o: any) => parseFloat(o.netProfit) > -1.0).length} فرصة واعدة.`} 
+                  text={`تحليل السوق المباشر: تم رصد ${opportunities.length} فرصة واعدة.`} 
                   sentiment="positive" 
                 />
                 {opportunities
-                  .filter((o: any) => parseFloat(o.netProfit) > -1.0)
                   .map((opp: any, i: number) => (
                     <AILogMessage 
                       key={i}
@@ -243,7 +242,7 @@ export default function Dashboard() {
               </>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">
-                جاري تحليل أعمق للسوق... لا توجد فرص ذات ربحية جيدة حالياً.
+                جاري تحليل أعمق للسوق... لا توجد فرص حالياً.
               </p>
             )}
           </div>
@@ -273,7 +272,7 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {opportunities?.filter((o: any) => parseFloat(o.netProfit) > -0.5).map((opp) => (
+              {opportunities?.map((opp: any) => (
                 <tr key={opp.id} className="hover:bg-secondary/20 transition-colors">
                   <td className="px-6 py-4 font-bold ltr font-mono">{opp.pair}</td>
                   <td className="px-6 py-4">
@@ -290,18 +289,18 @@ export default function Dashboard() {
                   </td>
                   <td className="px-6 py-4 font-mono text-xs" dir="ltr">{opp.spread}%</td>
                   <td className="px-6 py-4 font-mono text-xs text-rose-500" dir="ltr">-{opp.fees}%</td>
-                  <td className="px-6 py-4 font-bold text-emerald-500 font-mono" dir="ltr">
+                  <td className={`px-6 py-4 font-bold font-mono ${parseFloat(opp.netProfit) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`} dir="ltr">
                     {opp.netProfit}%
                     <div className="text-[10px] text-muted-foreground font-normal">≈ ${opp.expectedProfitUsdt}</div>
                   </td>
                   <td className="px-6 py-4 font-bold text-primary font-mono text-xs" dir="ltr">${opp.minAmountRequired}</td>
                   <td className="px-6 py-4">
-                    {opp.status === 'available' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-green-500/10 text-green-500">مربحة (محمية)</span>}
-                    {opp.status === 'analyzing' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-500/10 text-slate-500">غير مربحة</span>}
+                    {opp.status === 'available' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-green-500/10 text-green-500">نشط</span>}
+                    {opp.status === 'analyzing' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-500/10 text-slate-500">جاري التحليل</span>}
                   </td>
                   <td className="px-6 py-4">
                     <button 
-                      disabled={opp.status !== 'available' || executeTradeMutation.isPending}
+                      disabled={executeTradeMutation.isPending}
                       onClick={() => executeTradeMutation.mutate({
                         pair: opp.pair,
                         buyPlatform: opp.buy,
@@ -319,7 +318,7 @@ export default function Dashboard() {
                   </td>
                 </tr>
               ))}
-              {opportunities?.filter((o: any) => parseFloat(o.netProfit) > -0.5).length === 0 && (
+              {(!opportunities || opportunities.length === 0) && (
                 <tr>
                   <td colSpan={8} className="text-center py-8 text-muted-foreground">لا توجد فرص متاحة حالياً. جاري البحث...</td>
                 </tr>
