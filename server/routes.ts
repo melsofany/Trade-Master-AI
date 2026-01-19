@@ -498,13 +498,10 @@ export async function registerRoutes(
         } else {
           console.error(`Market data error for ${pair} on ${p.name}:`, e.message);
         }
-        
-        // Ensure we still have a price object if we can, or skip
-        prices[p.name] = null;
       }
         }));
 
-        const platformNames = Object.keys(prices).filter(name => prices[name] !== null);
+        const platformNames = Object.keys(prices);
         if (platformNames.length < 2) continue;
 
         // Find best arbitrage opportunity for this pair
@@ -565,12 +562,11 @@ export async function registerRoutes(
                   ? "تحذير: تقلبات عالية في السوق، يفضل الانتظار" 
                   : "فرصة آمنة للتنفيذ";
 
-              // Final Discovery Mode: Show all opportunities for debugging, ignoring profit filters
+              // Only include profitable opportunities
+              if (netProfitUsdt < 0) continue; 
+
               const netSpread = (netProfitUsdt / tradeAmount) * 100;
               const spread = ((sellVWAP - buyVWAP) / buyVWAP) * 100;
-
-              // Force available status to see them in UI
-              const status = "available";
 
               results.push({
                 id: results.length + 1,
@@ -587,7 +583,7 @@ export async function registerRoutes(
                 aiRiskScore,
                 aiRecommendation,
                 network: commonNetworks[0] || "Unknown",
-                status: status
+                status: netSpread >= parseFloat(minProfitRequired) ? "available" : "analyzing"
               });
             }
           }
