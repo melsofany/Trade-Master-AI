@@ -562,11 +562,14 @@ export async function registerRoutes(
                   ? "تحذير: تقلبات عالية في السوق، يفضل الانتظار" 
                   : "فرصة آمنة للتنفيذ";
 
-              // Only include profitable opportunities or those with potential for discovery
-              if (netProfitUsdt < -2.0) continue; 
+              // Temporary discovery threshold: Show almost all opportunities for debugging
+              if (netProfitUsdt < -10.0) continue; 
 
               const netSpread = (netProfitUsdt / tradeAmount) * 100;
               const spread = ((sellVWAP - buyVWAP) / buyVWAP) * 100;
+
+              // Force available status for small negative profits to see them in UI
+              const status = netSpread >= -0.5 ? "available" : "analyzing";
 
               results.push({
                 id: results.length + 1,
@@ -583,7 +586,7 @@ export async function registerRoutes(
                 aiRiskScore,
                 aiRecommendation,
                 network: commonNetworks[0] || "Unknown",
-                status: netSpread >= parseFloat(minProfitRequired) ? "available" : "analyzing"
+                status: status
               });
             }
           }
