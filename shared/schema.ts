@@ -42,7 +42,7 @@ export const botSettings = pgTable("bot_settings", {
   riskPercentage: numeric("risk_percentage").default("2"), // 0.5% - 5%
   maxOpenPositions: integer("max_open_positions").default(5),
   riskRewardRatio: numeric("risk_reward_ratio").default("2"), // 1:2 default
-  isPaperTrading: boolean("is_paper_trading").default(true),
+  isPaperTrading: boolean("is_paper_trading").default(false),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 

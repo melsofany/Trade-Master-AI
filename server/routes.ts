@@ -503,39 +503,6 @@ export async function registerRoutes(
     ];
     const results = [];
 
-    // Mock data for display when no real opportunities found or in Paper Trading
-    if (settings?.isPaperTrading || results.length === 0) {
-      const mockPairs = ["BTC/USDT", "ETH/USDT", "SOL/USDT"];
-      mockPairs.forEach((pair, idx) => {
-        const basePrice = pair === "BTC/USDT" ? 65000 : pair === "ETH/USDT" ? 3500 : 140;
-        const buyPrice = basePrice * (1 - 0.005);
-        const sellPrice = basePrice * (1 + 0.008);
-        const spread = ((sellPrice - buyPrice) / buyPrice) * 100;
-        
-        results.push({
-          id: results.length + 100, // Offset for mock
-          pair,
-          buy: "Binance",
-          sell: "Kraken",
-          buyPrice: buyPrice.toFixed(2),
-          sellPrice: sellPrice.toFixed(2),
-          spread: spread.toFixed(2),
-          fees: "0.20",
-          netProfit: (spread - 0.2).toFixed(2),
-          expectedProfitUsdt: (500 * (spread - 0.2) / 100).toFixed(2),
-          minProfitRequired: settings?.minProfitPercentage || "0.5",
-          aiRiskScore: 10,
-          aiRecommendation: "فرصة تجريبية آمنة (Paper Trading)",
-          network: "TRC20",
-          status: "available",
-          technicalSignals: { rsi: 45, sentiment: "neutral" },
-          stopLoss: (buyPrice * 0.98).toFixed(2),
-          takeProfit: (buyPrice * 1.04).toFixed(2),
-          isPaperTrade: true
-        });
-      });
-    }
-
     try {
       for (const pair of pairs) {
         const prices: Record<string, any> = {};
