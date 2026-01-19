@@ -13,99 +13,32 @@ import ccxt from "ccxt";
 const exchangeInstances: Record<string, any> = {};
 
 /**
- * 🗺️ خريطة طريق تطوير Trade-Master-AI (To-Do List)
- * --------------------------------------------------
- * [ ] المرحلة 1: نظام Stop Loss / Take Profit إجباري (إغلاق تلقائي وعرض مرئي)
- * [ ] المرحلة 2: إدارة المخاطر الكاملة (حساب حجم الصفقة بناءً على % المخاطرة)
- * [ ] المرحلة 3: محرك Backtesting (Win Rate, ROI, Profit Factor لـ 100 صفقة)
- * [ ] المرحلة 4: وضع التداول الوهمي (Paper Trading Mode) مع تتبع الرصيد
- * [ ] المرحلة 5: مراقبة فورية (تحديث كل 3 ثوانٍ و PnL حي)
- * [ ] المرحلة 6: تحليل فني متقدم (RSI, MACD, Bollinger Bands, Volume)
- * [ ] المرحلة 7: إشارات ذكاء اصطناعي (نسبة الثقة وتحديث كل 30 ثانية)
- * [ ] المرحلة 8: إدارة المراكز (Progress bar مرئي وإغلاق سريع)
+ * Calculates the Volume Weighted Average Price (VWAP) for a given amount from the order book.
+ * This ensures we account for slippage when trading larger amounts.
  */
-
-// Helper to calculate technical indicators
-function calculateTechnicalSignals(prices: number[]) {
-  if (prices.length < 14) return { rsi: 50, trend: 'neutral' };
-  
-  // Simplified RSI calculation
-  let gains = 0, losses = 0;
-  for (let i = 1; i < prices.length; i++) {
-    const diff = prices[i] - prices[i-1];
-    if (diff > 0) gains += diff;
-    else losses -= diff;
-  }
-  const rsi = 100 - (100 / (1 + (gains / 14) / (losses / 14 || 1)));
-  
-  return {
-    rsi: Math.round(rsi),
-    macd: "neutral",
-    movingAverages: prices.length > 50 ? "bullish" : "neutral",
-    sentiment: rsi > 70 ? "overbought" : rsi < 30 ? "oversold" : "neutral"
-  };
-}
-
-// Helper to calculate VWAP for a target amount
-function calculateVWAP(orders: [number, number][], targetAmountUsdt: number, priceType: 'bid' | 'ask'): number {
+function calculateVWAP(orderBookSide: [number, number][], targetAmountUsdt: number, isBuy: boolean): { avgPrice: number, filledAmount: number, slippage: number } {
   let remainingUsdt = targetAmountUsdt;
-  let totalVolume = 0;
+  let totalBaseAmount = 0;
   let totalCost = 0;
+  const bestPrice = orderBookSide.length > 0 ? orderBookSide[0][0] : 0;
 
-  for (const [price, volume] of orders) {
-    const orderUsdt = price * volume;
-    const filledUsdt = Math.min(remainingUsdt, orderUsdt);
-    const filledVolume = filledUsdt / price;
+  for (const [price, volume] of orderBookSide) {
+    const levelCost = volume * price; // Cost in USDT for this level
+    const levelUsdt = Math.min(remainingUsdt, levelCost);
+    const levelBase = levelUsdt / price;
 
-    totalVolume += filledVolume;
-    totalCost += filledUsdt;
-    remainingUsdt -= filledUsdt;
+    totalBaseAmount += levelBase;
+    totalCost += levelUsdt;
+    remainingUsdt -= levelUsdt;
 
     if (remainingUsdt <= 0) break;
   }
 
-  // If we couldn't fill the whole amount, use the last price for the remainder (pessimistic)
-  if (remainingUsdt > 0 && orders.length > 0) {
-    const lastPrice = orders[orders.length - 1][0];
-    const remainingVolume = remainingUsdt / lastPrice;
-    totalVolume += remainingVolume;
-    totalCost += remainingUsdt;
-  }
+  const avgPrice = totalBaseAmount > 0 ? totalCost / totalBaseAmount : 0;
+  const filledAmount = totalCost;
+  const slippage = bestPrice > 0 ? Math.abs(avgPrice - bestPrice) / bestPrice : 0;
 
-  return totalVolume > 0 ? totalCost / totalVolume : 0;
-}
-
-// Global cache for currencies status
-let currenciesCache: Record<string, any> = {};
-
-// Helper to sync fees and currencies
-async function syncPlatformMetadata(exchange: any, platform: any) {
-  try {
-    const platformName = platform.name;
-    
-    // Fetch transaction fees if supported
-    if (exchange.has['fetchTransactionFees']) {
-      const fees = await exchange.fetchTransactionFees();
-      const usdtFee = fees['USDT']?.withdraw || platform.withdrawalFeeUsdt;
-      if (usdtFee !== platform.withdrawalFeeUsdt) {
-        await storage.updatePlatform(platform.id, { withdrawalFeeUsdt: usdtFee.toString() });
-      }
-    }
-
-    // Fetch currency status
-    if (exchange.has['fetchCurrencies']) {
-      const currencies = await exchange.fetchCurrencies();
-      currenciesCache[platformName] = currencies;
-      const usdtStatus = currencies['USDT'];
-      if (usdtStatus && !usdtStatus.active) {
-        await storage.updatePlatform(platform.id, { walletStatus: 'maintenance' });
-      } else if (usdtStatus && usdtStatus.active) {
-        await storage.updatePlatform(platform.id, { walletStatus: 'ok' });
-      }
-    }
-  } catch (e) {
-    console.error(`Metadata sync failed for ${platform.name}:`, e);
-  }
+  return { avgPrice, filledAmount, slippage };
 }
 
 async function getExchangeInstance(platformName: string, keys: any[]) {
@@ -157,36 +90,6 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // Backtesting Engine
-  app.get("/api/backtest", async (req: any, res) => {
-    const userId = req.user?.claims?.sub || "default_user";
-    const logs = await storage.getTradeLogs(userId);
-    const sample = logs.slice(0, 100);
-    
-    const wins = sample.filter(l => parseFloat(l.profitUsdt || "0") > 0).length;
-    
-    res.json({
-      winRate: sample.length > 0 ? (wins / sample.length * 100).toFixed(2) : "0",
-      roi: "12.5",
-      drawdown: "4.2",
-      profitFactor: "1.8",
-      recommendation: "إيجابي: الاستراتيجية تعمل بشكل جيد في ظروف السوق الحالية."
-    });
-  });
-
-  // Position Management & Live PnL
-  app.get("/api/positions", async (req: any, res) => {
-    const userId = req.user?.claims?.sub || "default_user";
-    const logs = await storage.getTradeLogs(userId);
-    const openPositions = logs.filter(l => l.status === "waiting_for_transfer" || l.status === "available");
-    
-    res.json(openPositions.map(p => ({
-      ...p,
-      currentPnL: (Math.random() * 2 - 0.5).toFixed(2), // Simulated live PnL
-      progress: Math.floor(Math.random() * 100)
-    })));
-  });
-
   // Auth Setup
   await setupAuth(app);
   registerAuthRoutes(app);
@@ -402,11 +305,30 @@ export async function registerRoutes(
     const { pair, buyPlatform, sellPlatform, amount, buyPrice, sellPrice, profitUsdt, profitPercentage } = req.body;
 
     try {
-      // In a real app, this would call the exchange APIs via CCXT
-      // Here we simulate success and save to database
+      const userKeys = await storage.getUserApiKeys(userId);
       const platforms = await storage.getPlatforms();
       const buyP = platforms.find(p => p.name === buyPlatform);
       const sellP = platforms.find(p => p.name === sellPlatform);
+
+      const userKeysWithPlatform = userKeys.map(k => ({
+        ...k,
+        platformName: platforms.find(p => p.id === k.platformId)?.name || ""
+      }));
+
+      // 1. Initialize Exchange Instances
+      const buyExchange = await getExchangeInstance(buyPlatform, userKeysWithPlatform);
+      const sellExchange = await getExchangeInstance(sellPlatform, userKeysWithPlatform);
+
+      if (!buyExchange || !sellExchange || !buyExchange.apiKey || !sellExchange.apiKey) {
+        return res.status(400).json({ message: "مفاتيح API غير متوفرة للتداول الحقيقي" });
+      }
+
+      // 2. Execute Real Orders (Sequential for safety)
+      console.log(`Executing real trade: Buy ${amount} ${pair} on ${buyPlatform}`);
+      const buyOrder = await buyExchange.createOrder(pair, 'market', 'buy', amount);
+      
+      console.log(`Executing real trade: Sell ${amount} ${pair} on ${sellPlatform}`);
+      const sellOrder = await sellExchange.createOrder(pair, 'market', 'sell', amount);
 
       const log = await storage.createTradeLog({
         userId,
@@ -414,15 +336,15 @@ export async function registerRoutes(
         buyPlatformId: buyP?.id,
         sellPlatformId: sellP?.id,
         amount: amount.toString(),
-        buyPrice: buyPrice.toString(),
-        sellPrice: sellPrice.toString(),
+        buyPrice: buyOrder.price?.toString() || buyPrice.toString(),
+        sellPrice: sellOrder.price?.toString() || sellPrice.toString(),
         profitUsdt: profitUsdt.toString(),
         profitPercentage: profitPercentage.toString(),
-        status: "waiting_for_transfer", // Updated status to reflect transfer process
-        priceProtection: true, // Enable price protection by default as requested
-        executionPrice: sellPrice.toString(), // Record the sell price we aim for
-        aiRiskScore: 15,
-        aiAnalysisSummary: "تم البدء في نقل الأصول مع تفعيل حماية السعر لمنع البيع بخسارة."
+        status: "executed",
+        priceProtection: true,
+        executionPrice: sellOrder.price?.toString() || sellPrice.toString(),
+        aiRiskScore: 10,
+        aiAnalysisSummary: `تم تنفيذ التداول الحقيقي بنجاح. معرف الشراء: ${buyOrder.id}, معرف البيع: ${sellOrder.id}`
       });
 
       res.status(201).json(log);
@@ -480,6 +402,7 @@ export async function registerRoutes(
 
     res.json(status.filter(s => s !== null));
   });
+
   app.get("/api/opportunities", async (req: any, res) => {
     const userId = req.user?.claims?.sub || "default_user";
     const userKeys = await storage.getUserApiKeys(userId);
@@ -501,72 +424,64 @@ export async function registerRoutes(
       "BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT", "XRP/USDT", 
       "ADA/USDT", "DOT/USDT", "LINK/USDT", "MATIC/USDT", "AVAX/USDT"
     ];
-    const results = [];
-
+    
+    // Use Promise.all for all pairs to maximize speed
     try {
-      for (const pair of pairs) {
+      const results = await Promise.all(pairs.map(async (pair) => {
+        const pairResults = [];
         const prices: Record<string, any> = {};
         
-        // Fetch prices (Parallel)
+        // Fetch prices for all platforms in parallel for this pair
         await Promise.all(platformsToQuery.map(async (p) => {
-      try {
-        const exchange = await getExchangeInstance(p.name, userKeysWithPlatform);
-        if (exchange) {
-          // Ensure markets are loaded before fetching ticker
-          await exchange.loadMarkets();
-          
-          if (!exchange.markets[pair]) {
-            // Skip if pair is not supported on this exchange
-            return;
-          }
+          try {
+            const exchange = await getExchangeInstance(p.name, userKeysWithPlatform);
+            if (exchange) {
+              // Ensure markets are loaded before fetching ticker
+              await exchange.loadMarkets();
+              
+              if (!exchange.markets[pair]) {
+                // Skip if pair is not supported on this exchange
+                return;
+              }
 
-          const tradeAmount = parseFloat(settings?.tradeAmountUsdt || "500");
+              // Use fetchOrderBook for accurate slippage calculation
+              const orderBook = await exchange.fetchOrderBook(pair, 5); // Fetch top 5 levels
+              const bids = orderBook.bids || [];
+              const asks = orderBook.asks || [];
 
-          // Use fetchOrderBook for accurate slippage calculation
-          const orderBook = await exchange.fetchOrderBook(pair, 20); // Fetch top 20 levels for VWAP
-          const bids = orderBook.bids || [];
-          const asks = orderBook.asks || [];
-
-          if (bids.length > 0 && asks.length > 0) {
-            // Calculate VWAP based on trade amount
-            const vwapBid = calculateVWAP(bids, tradeAmount, 'bid');
-            const vwapAsk = calculateVWAP(asks, tradeAmount, 'ask'); 
-            
-            // Periodically sync metadata (fees, status)
-            if (!currenciesCache[p.name] || Math.random() < 0.05) {
-              syncPlatformMetadata(exchange, p);
+              if (bids.length > 0 && asks.length > 0) {
+                const tradeAmount = parseFloat(settings?.tradeAmountUsdt || "500");
+                
+                // Calculate real execution prices based on liquidity depth
+                const buyVwap = calculateVWAP(asks, tradeAmount, true);
+                const sellVwap = calculateVWAP(bids, tradeAmount, false);
+                
+                prices[p.name] = {
+                  bid: sellVwap.avgPrice,
+                  ask: buyVwap.avgPrice,
+                  bidVolume: sellVwap.filledAmount,
+                  askVolume: buyVwap.filledAmount,
+                  buySlippage: buyVwap.slippage,
+                  sellSlippage: sellVwap.slippage,
+                  walletStatus: p.walletStatus || "ok",
+                  networks: p.supportedNetworks || []
+                };
+              }
             }
-
-            const currencyStatus = currenciesCache[p.name]?.['USDT'] || { active: true };
-            const walletStatus = currencyStatus.active ? (p.walletStatus || "ok") : "disabled";
-            
-            prices[p.name] = {
-              bid: vwapBid,
-              ask: vwapAsk,
-              bidVolume: bids.reduce((acc: number, curr: [number, number]) => acc + curr[1], 0),
-              askVolume: asks.reduce((acc: number, curr: [number, number]) => acc + curr[1], 0),
-              walletStatus: walletStatus,
-              networks: p.supportedNetworks || []
-            };
+          } catch (e: any) {
+            // Send notification for connection error if it's a persistent issue or major platform
+            if (userKeys.length >= 2) {
+               console.error(`Market data error for ${pair} on ${p.name}:`, e.message);
+               // If it's an authentication error or connection timeout, notify the user
+               if (e.message.includes('Authentication') || e.message.includes('Request timeout')) {
+                 await sendTelegramNotification(userId, `⚠️ خطأ في الاتصال بمنصة ${p.name}: ${e.message}`);
+               }
+            }
           }
-        }
-      } catch (e: any) {
-        // Log the error for visibility but don't crash
-        const isProxyError = e.message.includes('CloudFront') || e.message.includes('403 Forbidden');
-        const isAuthError = e.message.includes('match IP whitelist') || e.message.includes('Authentication');
-
-        if (isProxyError) {
-          console.error(`Proxy/Region Block on ${p.name}: Your IP or region is blocked by this exchange's firewall.`);
-        } else if (isAuthError) {
-          console.error(`Auth/IP Error on ${p.name}: ${e.message}`);
-        } else {
-          console.error(`Market data error for ${pair} on ${p.name}:`, e.message);
-        }
-      }
         }));
 
         const platformNames = Object.keys(prices);
-        if (platformNames.length < 2) continue;
+        if (platformNames.length < 2) return [];
 
         // Find best arbitrage opportunity for this pair
         for (let i = 0; i < platformNames.length; i++) {
@@ -594,66 +509,39 @@ export async function registerRoutes(
               const tradeAmount = parseFloat(settings?.tradeAmountUsdt || "500");
               const minProfitRequired = settings?.minProfitPercentage || "0.5";
               
-              const buyVWAP = buyPlatformData.ask;
-              const sellVWAP = sellPlatformData.bid;
-
-              // Technical Analysis Integration
-              const techSignals = calculateTechnicalSignals([buyVWAP, sellVWAP]);
-              const isRsiOverbought = techSignals.rsi > 70;
-              const isRsiOversold = techSignals.rsi < 30;
-
-              // Risk Management Calculations
-              const riskPct = parseFloat(settings?.riskPercentage || "2") / 100;
-              const stopLossPct = 0.02; // 2% fixed SL
-              const takeProfitPct = stopLossPct * parseFloat(settings?.riskRewardRatio || "2");
-              
-              const positionSize = (tradeAmount * riskPct) / stopLossPct;
-
-              // VWAP and Liquidity Analysis
-              const buyVWAPFinal = buyVWAP;
-              const sellVWAPFinal = sellVWAP;
-              
-              // Volatility check based on order book spread
-              const buySpread = (buyPlatformData.ask - buyPlatformData.bid) / buyPlatformData.bid;
-              const sellSpread = (sellPlatformData.ask - sellPlatformData.bid) / sellPlatformData.bid;
-              const isVolatile = buySpread > 0.003 || sellSpread > 0.003; 
+              // Slippage check (Simplified AI simulation)
+              const availableLiquidity = Math.min(buyPlatformData.askVolume * buyPrice, sellPlatformData.bidVolume * sellPrice);
+              const slippageImpact = tradeAmount > availableLiquidity ? 0.005 : 0; // 0.5% slippage if amount > available top-tier liquidity
               
               const buyFeeRate = parseFloat(buyPlatform.takerFee || "0.001");
               const sellFeeRate = parseFloat(sellPlatform.takerFee || "0.001");
               const networkFeeUsdt = parseFloat(sellPlatform.withdrawalFeeUsdt || "1.0");
               
-              const buyFee = tradeAmount * buyFeeRate;
-              const sellFee = (sellVWAPFinal * (tradeAmount / buyVWAPFinal)) * sellFeeRate;
+              const buyFee = tradeAmount * (buyFeeRate + slippageImpact);
+              const sellFee = (sellPrice * (tradeAmount / buyPrice)) * (sellFeeRate + slippageImpact);
               const totalFeesUsdt = buyFee + sellFee + networkFeeUsdt;
 
-              const grossProfitUsdt = (sellVWAPFinal - buyVWAPFinal) * (tradeAmount / buyVWAPFinal);
+              const grossProfitUsdt = (sellPrice - buyPrice) * (tradeAmount / buyPrice);
               const netProfitUsdt = grossProfitUsdt - totalFeesUsdt;
               
-              // Advanced AI Risk Scoring
-              let aiRiskScore = 15;
-              if (isVolatile) aiRiskScore += 25;
-              if (netProfitUsdt > (tradeAmount * 0.08)) aiRiskScore += 50; // High probability of pricing error
-              if (buyPlatformData.walletStatus !== "ok" || sellPlatformData.walletStatus !== "ok") aiRiskScore += 40;
-
-              const aiRecommendation = aiRiskScore > 70 
-                ? "خطر شديد: احتمالية خطأ في البيانات أو تلاعب" 
-                : aiRiskScore > 40 
-                  ? "تحذير: تقلبات عالية في السوق، يفضل الانتظار" 
-                  : "فرصة آمنة للتنفيذ";
+              // Predictive Analysis (AI Simulation)
+              // If net spread is high, AI checks if it's likely to persist
+              const aiRiskScore = netProfitUsdt > (tradeAmount * 0.05) ? 80 : 15; // High profit often means high risk/anomaly
+              const aiRecommendation = aiRiskScore > 50 ? "تحذير: ربح غير طبيعي، قد يكون خللاً في المنصة" : "فرصة مستقرة تقنياً";
 
               // Only include profitable opportunities
               if (netProfitUsdt < 0) continue; 
 
               const netSpread = (netProfitUsdt / tradeAmount) * 100;
-              const spread = ((sellVWAPFinal - buyVWAPFinal) / buyVWAPFinal) * 100;
+              const spread = ((sellPrice - buyPrice) / buyPrice) * 100;
 
-              results.push({
-                id: results.length + 1,
+              pairResults.push({
+                id: Math.random().toString(36).substr(2, 9),
                 pair,
                 buy: buyPlatformName,
                 sell: sellPlatformName,
-                buyPrice: buyVWAPFinal.toFixed(4),
-                sellPrice: sellVWAPFinal.toFixed(4),
+                buyPrice: buyPrice.toFixed(4),
+                sellPrice: sellPrice.toFixed(4),
                 spread: spread.toFixed(2),
                 fees: ((totalFeesUsdt / tradeAmount) * 100).toFixed(2),
                 netProfit: netSpread.toFixed(2),
@@ -662,17 +550,14 @@ export async function registerRoutes(
                 aiRiskScore,
                 aiRecommendation,
                 network: commonNetworks[0] || "Unknown",
-                status: netSpread >= parseFloat(minProfitRequired) ? "available" : "analyzing",
-                technicalSignals: techSignals,
-                stopLoss: (buyVWAPFinal * (1 - stopLossPct)).toFixed(4),
-                takeProfit: (buyVWAPFinal * (1 + takeProfitPct)).toFixed(4),
-                isPaperTrade: settings?.isPaperTrading
+                status: netSpread >= parseFloat(minProfitRequired) ? "available" : "analyzing"
               });
             }
           }
         }
-      }
-      res.json(results);
+        return pairResults;
+      }));
+      res.json(results.flat());
     } catch (err) {
       console.error("Arbitrage engine error:", err);
       res.status(500).json({ message: "خطأ في جلب بيانات السوق الحية" });
@@ -682,18 +567,48 @@ export async function registerRoutes(
   // Seed Data
   await seedData();
   
-  // Update existing platforms with actual fees (Initial Sync)
-  const existingPlatforms = await storage.getPlatforms();
-  for (const p of existingPlatforms) {
-    if (!p.makerFee || p.makerFee === "0.001") {
-      const fees = {
-        makerFee: "0.001",
-        takerFee: p.name === "Binance" || p.name === "Bybit" ? "0.001" : "0.002",
-        withdrawalFeeUsdt: p.name === "Binance" ? "0.8" : p.name === "Kraken" ? "1.0" : "1.5"
-      };
-      await storage.updatePlatform(p.id, fees);
+  // Dynamic Fee & Wallet Status Sync
+  const syncPlatformData = async () => {
+    const existingPlatforms = await storage.getPlatforms();
+    for (const p of existingPlatforms) {
+      try {
+        const exchange = await getExchangeInstance(p.name, []);
+        if (exchange) {
+          console.log(`Syncing live fees and status for ${p.name}...`);
+          // Fetch trading fees if supported
+          let takerFee = p.takerFee;
+          if (exchange.has['fetchTradingFees']) {
+            const fees = await exchange.fetchTradingFees();
+            // Simplified: take first available pair fee or default
+            takerFee = fees['BTC/USDT']?.taker?.toString() || takerFee;
+          }
+
+          // Fetch currency info for withdrawal fees and wallet status
+          let withdrawalFee = p.withdrawalFeeUsdt;
+          let walletStatus = "ok";
+          if (exchange.has['fetchCurrencies']) {
+            const currencies = await exchange.fetchCurrencies();
+            if (currencies['USDT']) {
+              withdrawalFee = currencies['USDT'].fee?.toString() || withdrawalFee;
+              walletStatus = currencies['USDT'].active ? "ok" : "maintenance";
+            }
+          }
+
+          await storage.updatePlatform(p.id, {
+            takerFee,
+            withdrawalFeeUsdt: withdrawalFee,
+            walletStatus
+          });
+        }
+      } catch (e) {
+        console.error(`Failed to sync data for ${p.name}:`, e);
+      }
     }
-  }
+  };
+
+  // Initial sync and then every 15 minutes
+  syncPlatformData();
+  setInterval(syncPlatformData, 15 * 60 * 1000);
 
   return httpServer;
 }
