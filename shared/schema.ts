@@ -39,6 +39,10 @@ export const botSettings = pgTable("bot_settings", {
   refreshRateSec: integer("refresh_rate_sec").default(10),
   telegramBotToken: text("telegram_bot_token"),
   telegramUserId: text("telegram_user_id"),
+  riskPercentage: numeric("risk_percentage").default("2"), // 0.5% - 5%
+  maxOpenPositions: integer("max_open_positions").default(5),
+  riskRewardRatio: numeric("risk_reward_ratio").default("2"), // 1:2 default
+  isPaperTrading: boolean("is_paper_trading").default(true),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
