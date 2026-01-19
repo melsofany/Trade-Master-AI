@@ -498,10 +498,13 @@ export async function registerRoutes(
         } else {
           console.error(`Market data error for ${pair} on ${p.name}:`, e.message);
         }
+        
+        // Ensure we still have a price object if we can, or skip
+        prices[p.name] = null;
       }
         }));
 
-        const platformNames = Object.keys(prices);
+        const platformNames = Object.keys(prices).filter(name => prices[name] !== null);
         if (platformNames.length < 2) continue;
 
         // Find best arbitrage opportunity for this pair
@@ -562,14 +565,12 @@ export async function registerRoutes(
                   ? "تحذير: تقلبات عالية في السوق، يفضل الانتظار" 
                   : "فرصة آمنة للتنفيذ";
 
-              // Temporary discovery threshold: Show almost all opportunities for debugging
-              if (netProfitUsdt < -10.0) continue; 
-
+              // Final Discovery Mode: Show all opportunities for debugging, ignoring profit filters
               const netSpread = (netProfitUsdt / tradeAmount) * 100;
               const spread = ((sellVWAP - buyVWAP) / buyVWAP) * 100;
 
-              // Force available status for small negative profits to see them in UI
-              const status = netSpread >= -0.5 ? "available" : "analyzing";
+              // Force available status to see them in UI
+              const status = "available";
 
               results.push({
                 id: results.length + 1,
