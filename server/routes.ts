@@ -562,8 +562,8 @@ export async function registerRoutes(
                   ? "تحذير: تقلبات عالية في السوق، يفضل الانتظار" 
                   : "فرصة آمنة للتنفيذ";
 
-              // Only include profitable opportunities
-              if (netProfitUsdt < 0) continue; 
+              // Only include profitable opportunities or those with potential for discovery
+              if (netProfitUsdt < -2.0) continue; 
 
               const netSpread = (netProfitUsdt / tradeAmount) * 100;
               const spread = ((sellVWAP - buyVWAP) / buyVWAP) * 100;
