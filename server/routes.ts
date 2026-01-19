@@ -445,57 +445,60 @@ export async function registerRoutes(
         
         // Fetch prices (Parallel)
         await Promise.all(platformsToQuery.map(async (p) => {
-          try {
-            const exchange = await getExchangeInstance(p.name, userKeysWithPlatform);
-            if (exchange) {
-              // Ensure markets are loaded before fetching ticker
-              await exchange.loadMarkets();
-              
-              if (!exchange.markets[pair]) {
-                // Skip if pair is not supported on this exchange
-                return;
-              }
-
-              const tradeAmount = parseFloat(settings?.tradeAmountUsdt || "500");
-
-              // Use fetchOrderBook for accurate slippage calculation
-              const orderBook = await exchange.fetchOrderBook(pair, 20); // Fetch top 20 levels for VWAP
-              const bids = orderBook.bids || [];
-              const asks = orderBook.asks || [];
-
-              if (bids.length > 0 && asks.length > 0) {
-                // Calculate VWAP based on trade amount
-                const vwapBid = calculateVWAP(bids, tradeAmount, 'bid');
-                const vwapAsk = calculateVWAP(asks, tradeAmount, 'ask');
-                
-                // Periodically sync metadata (fees, status)
-                if (!currenciesCache[p.name] || Math.random() < 0.05) {
-                  syncPlatformMetadata(exchange, p);
-                }
-
-                const currencyStatus = currenciesCache[p.name]?.['USDT'] || { active: true };
-                const walletStatus = currencyStatus.active ? (p.walletStatus || "ok") : "disabled";
-                
-                prices[p.name] = {
-                  bid: vwapBid,
-                  ask: vwapAsk,
-                  bidVolume: bids.reduce((acc: number, curr: [number, number]) => acc + curr[1], 0),
-                  askVolume: asks.reduce((acc: number, curr: [number, number]) => acc + curr[1], 0),
-                  walletStatus: walletStatus,
-                  networks: p.supportedNetworks || []
-                };
-              }
-            }
-          } catch (e: any) {
-            // Send notification for connection error if it's a persistent issue or major platform
-            if (userKeys.length >= 2) {
-               console.error(`Market data error for ${pair} on ${p.name}:`, e.message);
-               // If it's an authentication error or connection timeout, notify the user
-               if (e.message.includes('Authentication') || e.message.includes('Request timeout')) {
-                 await sendTelegramNotification(userId, `⚠️ خطأ في الاتصال بمنصة ${p.name}: ${e.message}`);
-               }
-            }
+      try {
+        const exchange = await getExchangeInstance(p.name, userKeysWithPlatform);
+        if (exchange) {
+          // Ensure markets are loaded before fetching ticker
+          await exchange.loadMarkets();
+          
+          if (!exchange.markets[pair]) {
+            // Skip if pair is not supported on this exchange
+            return;
           }
+
+          const tradeAmount = parseFloat(settings?.tradeAmountUsdt || "500");
+
+          // Use fetchOrderBook for accurate slippage calculation
+          const orderBook = await exchange.fetchOrderBook(pair, 20); // Fetch top 20 levels for VWAP
+          const bids = orderBook.bids || [];
+          const asks = orderBook.asks || [];
+
+          if (bids.length > 0 && asks.length > 0) {
+            // Calculate VWAP based on trade amount
+            const vwapBid = calculateVWAP(bids, tradeAmount, 'bid');
+            const vwapAsk = calculateVWAP(asks, tradeAmount, 'ask'); 
+            
+            // Periodically sync metadata (fees, status)
+            if (!currenciesCache[p.name] || Math.random() < 0.05) {
+              syncPlatformMetadata(exchange, p);
+            }
+
+            const currencyStatus = currenciesCache[p.name]?.['USDT'] || { active: true };
+            const walletStatus = currencyStatus.active ? (p.walletStatus || "ok") : "disabled";
+            
+            prices[p.name] = {
+              bid: vwapBid,
+              ask: vwapAsk,
+              bidVolume: bids.reduce((acc: number, curr: [number, number]) => acc + curr[1], 0),
+              askVolume: asks.reduce((acc: number, curr: [number, number]) => acc + curr[1], 0),
+              walletStatus: walletStatus,
+              networks: p.supportedNetworks || []
+            };
+          }
+        }
+      } catch (e: any) {
+        // Log the error for visibility but don't crash
+        const isProxyError = e.message.includes('CloudFront') || e.message.includes('403 Forbidden');
+        const isAuthError = e.message.includes('match IP whitelist') || e.message.includes('Authentication');
+
+        if (isProxyError) {
+          console.error(`Proxy/Region Block on ${p.name}: Your IP or region is blocked by this exchange's firewall.`);
+        } else if (isAuthError) {
+          console.error(`Auth/IP Error on ${p.name}: ${e.message}`);
+        } else {
+          console.error(`Market data error for ${pair} on ${p.name}:`, e.message);
+        }
+      }
         }));
 
         const platformNames = Object.keys(prices);
